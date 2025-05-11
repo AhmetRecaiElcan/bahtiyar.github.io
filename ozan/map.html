@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deniz Aracı Haritası</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Leaflet CSS ve JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <style>
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <script>
+        // Haritayı başlat (Istanbul koordinatları)
+        var map = L.map('map').setView([40.9769, 29.0255], 13);
+        
+        // Uydu görüntüsü katmanı (Esri WorldImagery)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // İsteğe bağlı: Harita ve uydu görünümü arasında geçiş yapabilmek için katman kontrolü ekleyin
+        var basemaps = {
+            "Uydu Görünümü": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 19
+            }),
+            "Sokak Haritası": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            })
+        };
+        
+        // Katman kontrolünü haritaya ekle
+        L.control.layers(basemaps, {}).addTo(map);
+        
+        // Varsayılan olarak uydu görünümünü seç
+        basemaps["Uydu Görünümü"].addTo(map);
+        
+        // Değişkenleri tanımla
+        var lastPoint = null;
+    </script>
+    
+    <!-- QWebChannel için gerekli JavaScript -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</body>
+</html>

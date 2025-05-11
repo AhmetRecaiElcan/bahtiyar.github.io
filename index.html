@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BahtiyarWebOT - Surface Vessel Control</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BahtiyarWebOT</h1>
+            <div id="connection-status" class="disconnected">Disconnected</div>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="connection-panel">
+                    <h3>Connection</h3>
+                    <select id="port-select">
+                        <option value="COM1">COM1</option>
+                        <option value="COM2">COM2</option>
+                        <option value="COM3">COM3</option>
+                        <option value="COM4">COM4</option>
+                        <option value="USB0">/dev/ttyUSB0</option>
+                        <option value="ACM0">/dev/ttyACM0</option>
+                    </select>
+                    <select id="baud-select">
+                        <option value="9600">9600</option>
+                        <option value="57600">57600</option>
+                        <option value="115200" selected>115200</option>
+                    </select>
+                    <button id="connect-btn">Connect</button>
+                </div>
+                
+                <div class="mission-panel">
+                    <h3>Mission Planning</h3>
+                    <button id="add-waypoint-btn">Add Waypoint</button>
+                    <button id="clear-mission-btn">Clear Mission</button>
+                    <button id="upload-mission-btn" disabled>Upload Mission</button>
+                    
+                    <div id="mission-types" style="display: none;">
+                        <h3>Mission Types</h3>
+                        <button id="zigzag-mission-btn" class="mission-btn">Zigzag Survey</button>
+                        <button id="obstacle-mission-btn" class="mission-btn">Obstacle Avoidance</button>
+                        <button id="docking-mission-btn" class="mission-btn">Docking</button>
+                    </div>
+                    
+                    <div id="zigzag-controls" class="mission-controls" style="display: none;">
+                        <h3>Zigzag Parameters</h3>
+                        <label>Width (m):
+                            <input type="number" id="zigzag-width" value="20" min="5" max="100">
+                        </label>
+                        <label>Segments:
+                            <input type="number" id="zigzag-segments" value="5" min="2" max="20">
+                        </label>
+                        <button id="generate-zigzag-btn">Generate Pattern</button>
+                    </div>
+                    
+                    <div id="obstacle-controls" class="mission-controls" style="display: none;">
+                        <h3>Obstacle Avoidance</h3>
+                        <label>Obstacle Size (m):
+                            <input type="number" id="obstacle-size" value="10" min="1" max="50">
+                        </label>
+                        <button id="add-obstacle-btn">Add Obstacle</button>
+                        <div class="obstacles-list">
+                            <h4>Obstacles:</h4>
+                            <ul id="obstacles-list"></ul>
+                        </div>
+                    </div>
+                    
+                    <div id="docking-controls" class="mission-controls" style="display: none;">
+                        <h3>Docking Mission</h3>
+                        <button id="set-docking-btn">Set Docking Point</button>
+                        <div id="docking-info">No docking point set</div>
+                    </div>
+                    
+                    <div class="waypoint-list">
+                        <h4>Waypoints:</h4>
+                        <ul id="waypoints"></ul>
+                    </div>
+                </div>
+                
+                <div class="mission-execution-panel">
+                    <h3>Mission Execution</h3>
+                    <div class="mission-status-container">
+                        Status: <span id="mission-status" class="status-ready">Ready</span>
+                    </div>
+                    <button id="start-mission-btn" disabled>Start Mission</button>
+                    <button id="stop-mission-btn" disabled>Stop Mission</button>
+                </div>
+                
+                <div class="telemetry-panel">
+                    <h3>Telemetry</h3>
+                    <div class="telemetry-data">
+                        <p>Altitude: <span id="altitude">0.0</span> m</p>
+                        <p>Speed: <span id="speed">0.0</span> m/s</p>
+                        <p>Heading: <span id="heading">0</span>°</p>
+                        <p>Battery: <span id="battery">0</span>%</p>
+                    </div>
+                </div>
+                <div class="camera-offline-panel camera-offline-container">
+                    <img src="cameraoffline.png" alt="Camera Offline" class="camera-offline-img">
+                    <div class="camera-offline-text">Bahtiyar ile bağlantı kurulamadı</div>
+                </div>
+                
+                <div class="log-panel">
+                    <h3>System Log</h3>
+                    <div id="log-container" class="log-container"></div>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
