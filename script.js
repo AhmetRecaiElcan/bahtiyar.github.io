@@ -672,6 +672,13 @@ document.addEventListener('DOMContentLoaded', function() {
     addLogEntry('System initialized');
     addLogEntry('Ready to connect to vessel controller');
     
+    // Mobile viewport height fix (for mobile browsers)
+    setVhVariable();
+    window.addEventListener('resize', setVhVariable);
+    
+    // Add mobile menu button and overlay to DOM
+    setupMobileInterface();
+    
     // Event Listeners
     document.getElementById('connect-btn').addEventListener('click', connectToPixhawk);
     document.getElementById('clear-mission-btn').addEventListener('click', clearMission);
@@ -688,26 +695,205 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isAddingWaypoint) {
             this.textContent = 'Click on map';
             addLogEntry('Click on map to add waypoint');
+            
+            // On mobile, close the sidebar after selecting this option
+            if (window.innerWidth <= 768) {
+                toggleMobileSidebar(false);
+            }
         } else {
             this.textContent = 'Add Waypoint';
         }
     });
     
     // Mission type buttons
-    document.getElementById('zigzag-mission-btn').addEventListener('click', () => setMissionType('zigzag'));
-    document.getElementById('obstacle-mission-btn').addEventListener('click', () => setMissionType('obstacle'));
-    document.getElementById('docking-mission-btn').addEventListener('click', () => setMissionType('docking'));
+    document.getElementById('zigzag-mission-btn').addEventListener('click', () => {
+        setMissionType('zigzag');
+        // On mobile, close sidebar after selecting mission type
+        if (window.innerWidth <= 768) {
+            setTimeout(() => toggleMobileSidebar(false), 300);
+        }
+    });
+    
+    document.getElementById('obstacle-mission-btn').addEventListener('click', () => {
+        setMissionType('obstacle');
+        // On mobile, close sidebar after selecting mission type
+        if (window.innerWidth <= 768) {
+            setTimeout(() => toggleMobileSidebar(false), 300);
+        }
+    });
+    
+    document.getElementById('docking-mission-btn').addEventListener('click', () => {
+        setMissionType('docking');
+        // On mobile, close sidebar after selecting mission type
+        if (window.innerWidth <= 768) {
+            setTimeout(() => toggleMobileSidebar(false), 300);
+        }
+    });
     
     // Zigzag controls
     document.getElementById('generate-zigzag-btn').addEventListener('click', generateZigzag);
     
     // Obstacle controls
-    document.getElementById('add-obstacle-btn').addEventListener('click', toggleAddObstacle);
+    document.getElementById('add-obstacle-btn').addEventListener('click', function() {
+        toggleAddObstacle();
+        // On mobile, close the sidebar after selecting this option
+        if (window.innerWidth <= 768 && this.classList.contains('active')) {
+            toggleMobileSidebar(false);
+        }
+    });
     
     // Docking controls
-    document.getElementById('set-docking-btn').addEventListener('click', toggleSetDocking);
+    document.getElementById('set-docking-btn').addEventListener('click', function() {
+        toggleSetDocking();
+        // On mobile, close the sidebar after selecting this option
+        if (window.innerWidth <= 768 && this.classList.contains('active')) {
+            toggleMobileSidebar(false);
+        }
+    });
     
     // Mission control buttons
     document.getElementById('start-mission-btn').addEventListener('click', startMission);
     document.getElementById('stop-mission-btn').addEventListener('click', stopMission);
+    
+    // If on mobile, make sure map controls are usable
+    if (window.innerWidth <= 768) {
+        // Initialize with sidebar closed
+        toggleMobileSidebar(false);
+        
+        // Delay map invalidation to ensure proper sizing
+        setTimeout(() => {
+            if (map) map.invalidateSize();
+        }, 300);
+    }
 });
+
+// Set the --vh CSS variable based on actual viewport height
+// This fixes issues with mobile browser address bars
+function setVhVariable() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    
+    // Force map to redraw if it exists
+    if (map) {
+        setTimeout(() => map.invalidateSize(), 100);
+    }
+}
+
+// Setup mobile interface elements
+function setupMobileInterface() {
+    // Only add if they don't already exist
+    if (!document.querySelector('.mobile-menu-btn')) {
+        // Create mobile menu button
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'mobile-menu-btn';
+        menuBtn.innerHTML = '☰';
+        menuBtn.setAttribute('aria-label', 'Toggle Menu');
+        document.body.appendChild(menuBtn);
+        
+        // Create overlay for sidebar
+        const overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+        
+        // Event listeners for mobile controls
+        menuBtn.addEventListener('click', function() {
+            toggleMobileSidebar();
+        });
+        
+        overlay.addEventListener('click', function() {
+            toggleMobileSidebar(false);
+        });
+        
+        // Add swipe detection to sidebar
+        const sidebar = document.querySelector('.sidebar');
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        sidebar.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        sidebar.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) {
+                // Swipe left - close sidebar
+                toggleMobileSidebar(false);
+            }
+        }, { passive: true });
+    }
+}
+
+// Toggle mobile sidebar visibility
+function toggleMobileSidebar(forceState) {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const menuBtn = document.querySelector('.mobile-menu-btn');
+    
+    if (forceState === undefined) {
+        // Toggle based on current state
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+        menuBtn.innerHTML = sidebar.classList.contains('active') ? '✕' : '☰';
+    } else if (forceState) {
+        // Force open
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+        menuBtn.innerHTML = '✕';
+    } else {
+        // Force close
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        menuBtn.innerHTML = '☰';
+    }
+    
+    // On any sidebar state change, ensure map is properly sized
+    if (map) {
+        setTimeout(() => map.invalidateSize(), 300);
+    }
+}
+
+// Update the initMap function to be more mobile-friendly
+const originalInitMap = initMap;
+initMap = function() {
+    originalInitMap();
+    
+    // Make map controls more touch-friendly
+    if (map) {
+        // Add touch detection
+        if ('ontouchstart' in window || navigator.maxTouchPoints) {
+            map.addHandler('tap', L.Map.Tap);
+            map.tap.enable();
+        }
+        
+        // Disable map zoom when double clicking
+        map.doubleClickZoom.disable();
+        
+        // Move zoom control to bottom right for better thumb reach on mobile
+        if (window.innerWidth <= 768) {
+            map.zoomControl.remove();
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+    }
+};
+
+// Modify connectToPixhawk to handle camera offline panel on mobile
+const originalConnectToPixhawk = connectToPixhawk;
+connectToPixhawk = function() {
+    originalConnectToPixhawk();
+    
+    // Update camera offline display on mobile
+    const cameraPanel = document.querySelector('.camera-offline-panel');
+    if (cameraPanel) {
+        if (isConnected) {
+            cameraPanel.classList.remove('show-mobile');
+        } else {
+            // On disconnect, show the camera offline panel briefly for mobile
+            if (window.innerWidth <= 768) {
+                cameraPanel.classList.add('show-mobile');
+                setTimeout(() => {
+                    cameraPanel.classList.remove('show-mobile');
+                }, 3000);
+            }
+        }
+    }
+};
