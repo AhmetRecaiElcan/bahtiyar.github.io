@@ -879,15 +879,22 @@ initMap = function() {
 // Modify connectToPixhawk to handle camera offline panel on mobile
 const originalConnectToPixhawk = connectToPixhawk;
 connectToPixhawk = function() {
+    // Get reference to camera panel before the original function runs
+    const cameraPanel = document.querySelector('.camera-offline-panel');
+    
+    // Run the original function
     originalConnectToPixhawk();
     
     // Update camera offline display on mobile
-    const cameraPanel = document.querySelector('.camera-offline-panel');
     if (cameraPanel) {
         if (isConnected) {
+            cameraPanel.style.display = 'none'; // Bağlantı kurulduğunda gizle
             cameraPanel.classList.remove('show-mobile');
         } else {
-            // On disconnect, show the camera offline panel briefly for mobile
+            // Bağlantı yokken göster
+            cameraPanel.style.display = 'flex';
+            
+            // On disconnect, also show the enhanced notification briefly for mobile
             if (window.innerWidth <= 768) {
                 cameraPanel.classList.add('show-mobile');
                 setTimeout(() => {
@@ -896,4 +903,31 @@ connectToPixhawk = function() {
             }
         }
     }
+};
+
+// Add a function to check camera connection status on page load
+function updateCameraStatus() {
+    const cameraPanel = document.querySelector('.camera-offline-panel');
+    if (cameraPanel) {
+        // Başlangıçta bağlantı olmadığı için göster
+        if (!isConnected) {
+            cameraPanel.style.display = 'flex';
+        } else {
+            cameraPanel.style.display = 'none';
+        }
+    }
+}
+
+// Update the DOMContentLoaded event handler to call our new function
+const originalDOMContentLoaded = document.addEventListener;
+document.addEventListener = function(event, handler) {
+    if (event === 'DOMContentLoaded') {
+        const enhancedHandler = function() {
+            handler();
+            // Call our camera status update function after initialization
+            updateCameraStatus();
+        };
+        return originalDOMContentLoaded.call(this, event, enhancedHandler);
+    }
+    return originalDOMContentLoaded.call(this, event, handler);
 };

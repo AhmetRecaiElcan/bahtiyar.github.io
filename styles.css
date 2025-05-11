@@ -370,20 +370,52 @@ button:disabled {
     
     /* Prioritize which panels to show in limited space */
     .camera-offline-panel {
-        display: none; /* Hide by default on mobile */
+        display: block; /* Değiştirildi: none yerine block kullanıldı */
+        padding: 0.5rem;
+        margin-bottom: 0.4rem;
     }
     
-    /* Show it when connection fails */
+    /* Camera offline panel için düzeltilmiş gösterim */
+    .camera-offline-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .camera-offline-img {
+        width: 40px; /* Mobil görünümde daha küçük */
+    }
+    
+    .camera-offline-text {
+        font-size: 0.8rem;
+        margin-top: 0;
+    }
+    
+    /* Show it when connection fails - bu kısım hala kullanılabilir */
     .camera-offline-panel.show-mobile {
-        display: block;
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: 1000;
+        z-index: 1100;
         width: 80%;
         max-width: 300px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
         text-align: center;
+        border-radius: 10px;
+        padding: 1rem;
+        backdrop-filter: blur(5px);
+    }
+    
+    .camera-offline-panel.show-mobile .camera-offline-img {
+        width: 80px;
+    }
+    
+    .camera-offline-panel.show-mobile .camera-offline-text {
+        font-size: 1rem;
+        color: white;
     }
     
     /* Shadow overlay when sidebar is open */
