@@ -447,3 +447,9 @@ button:disabled {
         bottom: max(20px, env(safe-area-inset-bottom));
     }
 }
+
+.vessel-icon {
+    font-size: 48px;
+    line-height: 1;
+    text-shadow: 0 0 4px #000, 0 0 8px #fff;
+}
