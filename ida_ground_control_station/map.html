@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GCS Haritası</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Leaflet CSS ve JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- QWebChannel için gerekli JavaScript -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    
+    <style>
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <script>
+        var map = L.map('map').setView([41.015137, 28.979530], 13); // İstanbul başlangıç noktası
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        
+        var vehicleMarker = null;
+        var waypoints = [];
+        var missionPath = null;
+        
+        // Araç ikonu (Emoji kullanarak)
+        var vehicleIcon = L.divIcon({
+            html: '<div style="font-size: 24px; transform: rotate(0deg);">⛵</div>',
+            className: 'vessel-marker', // CSS ile stil vermek için
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        // QWebChannel'ı hemen başlat
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.py_bridge = channel.objects.py_bridge;
+
+            // Python'dan gelen araç pozisyonu güncellemesini dinle
+            py_bridge.updateVehiclePosition.connect(function(lat, lng, heading) {
+                if (!vehicleMarker) {
+                    vehicleMarker = L.marker([lat, lng], {icon: vehicleIcon}).addTo(map);
+                }
+                vehicleMarker.setLatLng([lat, lng]);
+                
+                // İkonu aracın yönüne göre döndür (90 derece düzeltme ile)
+                var iconElement = vehicleMarker._icon.firstChild;
+                if (iconElement) { // Elementin var olduğundan emin ol
+                    iconElement.style.transform = `rotate(${heading + 90}deg)`;
+                }
+
+                map.panTo([lat, lng]);
+            });
+
+            // Python'dan gelen waypoint ekleme sinyalini dinle
+            py_bridge.addWaypoint.connect(function(lat, lng) {
+                addWaypointMarker(lat, lng);
+            });
+
+            // Python'dan gelen haritayı temizle sinyalini dinle
+            py_bridge.clearMap.connect(function() {
+                clearAll();
+            });
+        });
+
+        // Haritaya çift tıklandığında Python'a haber ver
+        map.on('dblclick', function(e) {
+            if (window.py_bridge) {
+                window.py_bridge.add_waypoint_to_ui(e.latlng.lat, e.latlng.lng);
+            }
+        });
+
+        // Haritaya bir waypoint markeri ekleyen fonksiyon
+        function addWaypointMarker(lat, lng) {
+            var waypointNum = waypoints.length + 1;
+            var marker = L.marker([lat, lng], {
+                title: "Waypoint " + waypointNum,
+                draggable: false 
+            }).addTo(map);
+            
+            marker.bindPopup("Waypoint " + waypointNum + "<br><small>Çift tıklayarak silin</small>");
+            
+            // Waypoint'e çift tıklandığında sil
+            marker.on('dblclick', function(e) {
+                removeWaypoint(marker);
+                e.originalEvent.stopPropagation(); // Harita event'inin tetiklenmesini engelle
+            });
+            
+            waypoints.push(marker);
+            updateMissionPath();
+        }
+
+        // Waypoint silme fonksiyonu
+        function removeWaypoint(markerToRemove) {
+            var index = waypoints.indexOf(markerToRemove);
+            if (index > -1) {
+                map.removeLayer(markerToRemove);
+                waypoints.splice(index, 1);
+                updateMissionPath();
+                
+                // Python tarafına waypoint silindiğini bildir
+                if (window.py_bridge) {
+                    window.py_bridge.remove_waypoint_from_ui(index);
+                }
+                
+                // Waypoint numaralarını yeniden düzenle
+                waypoints.forEach(function(wp, i) {
+                    wp.setPopupContent("Waypoint " + (i + 1) + "<br><small>Çift tıklayarak silin</small>");
+                    wp.options.title = "Waypoint " + (i + 1);
+                });
+            }
+        }
+
+        // Waypoint'ler arasına çizgi çizen fonksiyon
+        function updateMissionPath() {
+            if (missionPath) {
+                map.removeLayer(missionPath);
+            }
+            var latlngs = waypoints.map(wp => wp.getLatLng());
+            if (latlngs.length > 1) {
+                missionPath = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+            }
+        }
+        
+        // Tüm rotayı temizleyen fonksiyon (Python'dan çağrılabilir)
+        function clearAll() {
+            if (missionPath) {
+                map.removeLayer(missionPath);
+                missionPath = null;
+            }
+            waypoints.forEach(function(wp) {
+                map.removeLayer(wp);
+            });
+            waypoints = [];
+        }
+    </script>
+</body>
+</html>
