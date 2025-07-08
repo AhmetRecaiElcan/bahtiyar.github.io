@@ -206,15 +206,19 @@ class GCSApp(QWidget):
 
         mission_buttons_layout = QHBoxLayout()
         self.upload_mission_button = QPushButton("Rotayı Gönder")
+        self.read_mission_button = QPushButton("Rotayı Oku")
         self.clear_mission_button = QPushButton("Rotayı Temizle")
         mission_buttons_layout.addWidget(self.upload_mission_button)
+        mission_buttons_layout.addWidget(self.read_mission_button)
         mission_buttons_layout.addWidget(self.clear_mission_button)
         mission_control_layout.addLayout(mission_buttons_layout)
         
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
+        self.read_mission_button.clicked.connect(self.read_mission_from_vehicle)
         self.clear_mission_button.clicked.connect(self.clear_mission)
 
-        self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, self.upload_mission_button, self.clear_mission_button]
+        self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, 
+                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button]
         for btn in self.mode_buttons:
             btn.setEnabled(False)
 
@@ -459,6 +463,59 @@ class GCSApp(QWidget):
         except Exception as e:
             self.status_message_received.emit(f"Rota gönderme hatası: {e}")
             self.log_message_received.emit(f"HATA: Rota gönderilemedi - {e}")
+
+    def read_mission_from_vehicle(self):
+        """Aracın bellekindeki misyonu okur (Mission Planner'daki Read butonu işlevi)"""
+        if not self.is_connected or not self.vehicle:
+            self.status_message_received.emit("Rota okumak için araç bağlantısı gerekli.")
+            return
+        
+        self.status_message_received.emit("Aracın bellekindeki rota okunuyor...")
+        threading.Thread(target=self._read_mission_thread, daemon=True).start()
+
+    def _read_mission_thread(self):
+        """Aractan misyonu okuma thread'i"""
+        try:
+            # Önce mevcut misyonu temizle
+            self.waypoints = []
+            self.bridge.clearMap.emit()
+            
+            # Aracın komutlarını indir
+            cmds = self.vehicle.commands
+            cmds.download()
+            cmds.wait_ready()  # İndirmenin tamamlanmasını bekle
+            
+            waypoint_count = 0
+            # Her komutu kontrol et
+            for i, cmd in enumerate(cmds):
+                # Sadece waypoint komutlarını al (NAV_WAYPOINT)
+                if cmd.command == 16:  # MAV_CMD_NAV_WAYPOINT
+                    waypoint_count += 1
+                    waypoint = {
+                        "lat": cmd.x,
+                        "lng": cmd.y, 
+                        "alt": cmd.z,
+                        "num": waypoint_count
+                    }
+                    self.waypoints.append(waypoint)
+                    
+                    # Haritaya waypoint ekle
+                    self.bridge.addWaypoint.emit(cmd.x, cmd.y)
+                    
+                    self.log_message_received.emit(
+                        f"Waypoint #{waypoint_count} okundu: {cmd.x:.6f}, {cmd.y:.6f}, {cmd.z:.1f}m"
+                    )
+            
+            if waypoint_count > 0:
+                self.status_message_received.emit(f"Rota başarıyla okundu! {waypoint_count} waypoint alındı.")
+                self.log_message_received.emit(f"Toplam {waypoint_count} waypoint araçtan okundu.")
+            else:
+                self.status_message_received.emit("Araçta kayıtlı rota bulunamadı.")
+                self.log_message_received.emit("Araçta herhangi bir waypoint bulunamadı.")
+                
+        except Exception as e:
+            self.status_message_received.emit(f"Rota okuma hatası: {e}")
+            self.log_message_received.emit(f"HATA: Rota okunamadı - {e}")
     
     def clear_mission(self):
         self.waypoints = []

@@ -28,13 +28,15 @@
         var map = L.map('map').setView([41.015137, 28.979530], 13); // İstanbul başlangıç noktası
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            maxZoom: 22,
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
         
         var vehicleMarker = null;
         var waypoints = [];
         var missionPath = null;
+        var autoFollow = true; // Otomatik takip aktif mi?
+        var firstConnection = true; // İlk bağlantı mı?
         
         // Araç ikonu (Emoji kullanarak)
         var vehicleIcon = L.divIcon({
@@ -61,7 +63,14 @@
                     iconElement.style.transform = `rotate(${heading + 90}deg)`;
                 }
 
-                map.panTo([lat, lng]);
+                // Sadece ilk bağlantıda veya autoFollow aktifse haritayı takip et
+                if (firstConnection || autoFollow) {
+                    map.panTo([lat, lng]);
+                    if (firstConnection) {
+                        map.setView([lat, lng], 15); // İlk bağlantıda zoom yap
+                        firstConnection = false;
+                    }
+                }
             });
 
             // Python'dan gelen waypoint ekleme sinyalini dinle
@@ -80,6 +89,64 @@
             if (window.py_bridge) {
                 window.py_bridge.add_waypoint_to_ui(e.latlng.lat, e.latlng.lng);
             }
+        });
+
+        // Kullanıcı haritayı hareket ettirirse otomatik takibi kapat
+        map.on('dragstart', function(e) {
+            autoFollow = false;
+        });
+
+        // Kullanıcı zoom yaparsa otomatik takibi kapat
+        map.on('zoomstart', function(e) {
+            autoFollow = false;
+        });
+
+        // Sağ tık menüsü için context menu ekle
+        map.on('contextmenu', function(e) {
+            var menu = document.createElement('div');
+            menu.style.position = 'fixed';
+            menu.style.left = e.originalEvent.clientX + 'px';
+            menu.style.top = e.originalEvent.clientY + 'px';
+            menu.style.backgroundColor = 'white';
+            menu.style.border = '1px solid #ccc';
+            menu.style.borderRadius = '4px';
+            menu.style.padding = '8px';
+            menu.style.zIndex = '1000';
+            menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            menu.style.fontSize = '14px';
+            menu.style.cursor = 'pointer';
+            
+            if (vehicleMarker && autoFollow) {
+                menu.innerHTML = '🔓 Serbest Kamera';
+                menu.onclick = function() {
+                    autoFollow = false;
+                    document.body.removeChild(menu);
+                };
+            } else if (vehicleMarker) {
+                menu.innerHTML = '🔒 Aracı Takip Et';
+                menu.onclick = function() {
+                    autoFollow = true;
+                    map.panTo(vehicleMarker.getLatLng());
+                    document.body.removeChild(menu);
+                };
+            } else {
+                menu.innerHTML = '📍 Araç bağlantısı yok';
+                menu.onclick = function() {
+                    document.body.removeChild(menu);
+                };
+            }
+            
+            document.body.appendChild(menu);
+            
+            // Başka yere tıklanınca menüyü kapat
+            setTimeout(function() {
+                document.addEventListener('click', function closeMenu() {
+                    if (document.body.contains(menu)) {
+                        document.body.removeChild(menu);
+                    }
+                    document.removeEventListener('click', closeMenu);
+                }, 100);
+            }, 100);
         });
 
         // Haritaya bir waypoint markeri ekleyen fonksiyon
