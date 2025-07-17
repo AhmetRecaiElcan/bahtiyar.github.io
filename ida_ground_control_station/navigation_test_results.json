@@ -1,0 +1,5785 @@
+{
+  "scenario_name": "İstanbul Boğazı Navigasyon Testi",
+  "timestamp": 1752656397.267978,
+  "route_data": [],
+  "telemetry_log": [
+    {
+      "timestamp": 0.0,
+      "position": {
+        "lat": 41.013611,
+        "lon": 28.949168,
+        "alt": 0.5
+      },
+      "heading": 75.57295915545126,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.0,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 0.5,
+      "position": {
+        "lat": 41.01361104997917,
+        "lon": 28.94916799875026,
+        "alt": 0.5
+      },
+      "heading": 75.77262598874492,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.029887626494719845,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 1.0,
+      "position": {
+        "lat": 41.01361109983341,
+        "lon": 28.949167995004164,
+        "alt": 0.5
+      },
+      "heading": 75.97029781704138,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.05910404133226791,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 1.5,
+      "position": {
+        "lat": 41.01361114943813,
+        "lon": 28.949167988771077,
+        "alt": 0.5
+      },
+      "heading": 76.16399956877393,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.08699310682224604,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 2.0,
+      "position": {
+        "lat": 41.01361119866933,
+        "lon": 28.949167980066576,
+        "alt": 0.5
+      },
+      "heading": 76.35179584006856,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.11292849467900708,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 2.5,
+      "position": {
+        "lat": 41.01361124740396,
+        "lon": 28.94916796891242,
+        "alt": 0.5
+      },
+      "heading": 76.53181023265967,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.13632775200466682,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 3.0,
+      "position": {
+        "lat": 41.01361129552021,
+        "lon": 28.94916795533649,
+        "alt": 0.5
+      },
+      "heading": 76.70224410224132,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.15666538192549667,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 3.5,
+      "position": {
+        "lat": 41.0136113428978,
+        "lon": 28.94916793937271,
+        "alt": 0.5
+      },
+      "heading": 76.86139452992664,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1734846451188034,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 4.0,
+      "position": {
+        "lat": 41.01361138941834,
+        "lon": 28.949167921060994,
+        "alt": 0.5
+      },
+      "heading": 77.0076713372503,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18640781719344526,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 4.5,
+      "position": {
+        "lat": 41.01361143496553,
+        "lon": 28.9491679004471,
+        "alt": 0.5
+      },
+      "heading": 77.13961297470622,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19514467156533183,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 5.0,
+      "position": {
+        "lat": 41.013611479425535,
+        "lon": 28.94916787758256,
+        "alt": 0.5
+      },
+      "heading": 77.25590112506706,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1994989973208109,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 5.5,
+      "position": {
+        "lat": 41.01361152268723,
+        "lon": 28.94916785252452,
+        "alt": 0.5
+      },
+      "heading": 77.35537387557413,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19937300569078378,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 6.0,
+      "position": {
+        "lat": 41.013611564642474,
+        "lon": 28.949167825335614,
+        "alt": 0.5
+      },
+      "heading": 77.43703732738571,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19476952617563906,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 6.5,
+      "position": {
+        "lat": 41.013611605186405,
+        "lon": 28.9491677960838,
+        "alt": 0.5
+      },
+      "heading": 77.50007552628564,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18579194300077387,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 7.0,
+      "position": {
+        "lat": 41.01361164421768,
+        "lon": 28.949167764842187,
+        "alt": 0.5
+      },
+      "heading": 77.54385861542818,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17264187332977476,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 7.5,
+      "position": {
+        "lat": 41.01361168163876,
+        "lon": 28.949167731688867,
+        "alt": 0.5
+      },
+      "heading": 77.56794912865936,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.15561463937758424,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 8.0,
+      "position": {
+        "lat": 41.013611717356085,
+        "lon": 28.94916769670671,
+        "alt": 0.5
+      },
+      "heading": 77.57210636153427,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.13509263611023023,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 8.5,
+      "position": {
+        "lat": 41.0136117512804,
+        "lon": 28.949167659983146,
+        "alt": 0.5
+      },
+      "heading": 77.5562887763562,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1115367434782834,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 9.0,
+      "position": {
+        "lat": 41.01361178332691,
+        "lon": 28.949167621609966,
+        "alt": 0.5
+      },
+      "heading": 77.52065441720765,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.08547597604676604,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 9.5,
+      "position": {
+        "lat": 41.0136118134155,
+        "lon": 28.94916758168309,
+        "alt": 0.5
+      },
+      "heading": 77.46555933082608,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.05749560246850888,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 10.0,
+      "position": {
+        "lat": 41.01361184147098,
+        "lon": 28.949167540302305,
+        "alt": 0.5
+      },
+      "heading": 77.39155400910262,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.028224001611973443,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 10.5,
+      "position": {
+        "lat": 41.01361186742322,
+        "lon": 28.949167497571047,
+        "alt": 0.5
+      },
+      "heading": 77.299377888749,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.0016814494734297238,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 11.0,
+      "position": {
+        "lat": 41.013611891207354,
+        "lon": 28.94916745359612,
+        "alt": 0.5
+      },
+      "heading": 77.18995196309044,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.031549138828649646,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 11.5,
+      "position": {
+        "lat": 41.013611912763935,
+        "lon": 28.94916740848744,
+        "alt": 0.5
+      },
+      "heading": 77.0643695798047,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.06070830254168578,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 12.0,
+      "position": {
+        "lat": 41.01361193203908,
+        "lon": 28.949167362357755,
+        "alt": 0.5
+      },
+      "heading": 76.92388551655355,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.08850408865897041,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 12.5,
+      "position": {
+        "lat": 41.01361194898462,
+        "lon": 28.949167315322363,
+        "alt": 0.5
+      },
+      "heading": 76.76990344365917,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.11431226374846876,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 13.0,
+      "position": {
+        "lat": 41.01361196355818,
+        "lon": 28.94916726749883,
+        "alt": 0.5
+      },
+      "heading": 76.60396189909419,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.13755323183679477,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 13.5,
+      "position": {
+        "lat": 41.01361197572336,
+        "lon": 28.949167219006686,
+        "alt": 0.5
+      },
+      "heading": 76.42771891591892,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.157705050885239,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 14.0,
+      "position": {
+        "lat": 41.01361198544973,
+        "lon": 28.949167169967144,
+        "alt": 0.5
+      },
+      "heading": 76.24293545576307,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17431515448271764,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 14.5,
+      "position": {
+        "lat": 41.01361199271299,
+        "lon": 28.949167120502768,
+        "alt": 0.5
+      },
+      "heading": 76.05145781387922,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18701051551168982,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 15.0,
+      "position": {
+        "lat": 41.01361199749498,
+        "lon": 28.9491670707372,
+        "alt": 0.5
+      },
+      "heading": 75.85519917157099,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1955060235330194,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 15.5,
+      "position": {
+        "lat": 41.01361199978376,
+        "lon": 28.949167020794828,
+        "alt": 0.5
+      },
+      "heading": 75.65612048031784,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19961088775177588,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 16.0,
+      "position": {
+        "lat": 41.0136119995736,
+        "lon": 28.949166970800476,
+        "alt": 0.5
+      },
+      "heading": 75.4562108685961,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19923292176716814,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 16.5,
+      "position": {
+        "lat": 41.01361199686502,
+        "lon": 28.94916692087911,
+        "alt": 0.5
+      },
+      "heading": 75.25746776716475,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19438061388036418,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 17.0,
+      "position": {
+        "lat": 41.01361199166481,
+        "lon": 28.949166871155505,
+        "alt": 0.5
+      },
+      "heading": 75.0618769513976,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1851629364655465,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 17.5,
+      "position": {
+        "lat": 41.013611983985946,
+        "lon": 28.949166821753945,
+        "alt": 0.5
+      },
+      "heading": 74.87139270007202,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1717868986853184,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 18.0,
+      "position": {
+        "lat": 41.01361197384763,
+        "lon": 28.949166772797906,
+        "alt": 0.5
+      },
+      "heading": 74.68791826886155,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.15455289751119755,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 18.5,
+      "position": {
+        "lat": 41.0136119612752,
+        "lon": 28.949166724409753,
+        "alt": 0.5
+      },
+      "heading": 74.51328687363427,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1338479714552524,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 19.0,
+      "position": {
+        "lat": 41.01361194630009,
+        "lon": 28.949166676710433,
+        "alt": 0.5
+      },
+      "heading": 74.34924337356583,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.11013710851952752,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 19.5,
+      "position": {
+        "lat": 41.01361192895971,
+        "lon": 28.949166629819167,
+        "alt": 0.5
+      },
+      "heading": 74.19742683708331,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.08395280356797194,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 20.0,
+      "position": {
+        "lat": 41.013611909297424,
+        "lon": 28.949166583853163,
+        "alt": 0.5
+      },
+      "heading": 74.0593541648354,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.055883099639785175,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 20.5,
+      "position": {
+        "lat": 41.013611887362366,
+        "lon": 28.949166538927308,
+        "alt": 0.5
+      },
+      "heading": 73.93640493332244,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.02655838177050352,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 21.0,
+      "position": {
+        "lat": 41.01361186320936,
+        "lon": 28.949166495153893,
+        "alt": 0.5
+      },
+      "heading": 73.82980761062409,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.0033627800968699427,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 21.5,
+      "position": {
+        "lat": 41.01361183689879,
+        "lon": 28.949166452642334,
+        "alt": 0.5
+      },
+      "heading": 73.74062728195234,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.03320842117299145,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 22.0,
+      "position": {
+        "lat": 41.0136118084964,
+        "lon": 28.949166411498883,
+        "alt": 0.5
+      },
+      "heading": 73.66975500767222,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.062308272702675575,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 22.5,
+      "position": {
+        "lat": 41.01361177807319,
+        "lon": 28.949166371826376,
+        "alt": 0.5
+      },
+      "heading": 73.61789892012106,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.09000881475612353,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 23.0,
+      "position": {
+        "lat": 41.01361174570521,
+        "lon": 28.949166333723976,
+        "alt": 0.5
+      },
+      "heading": 73.58557714818433,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.11568795287763989,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 23.5,
+      "position": {
+        "lat": 41.01361171147335,
+        "lon": 28.949166297286922,
+        "alt": 0.5
+      },
+      "heading": 73.57311264032306,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.13876898898595275,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 24.0,
+      "position": {
+        "lat": 41.01361167546318,
+        "lon": 28.949166262606283,
+        "alt": 0.5
+      },
+      "heading": 73.58062993777958,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.15873357276983055,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 24.5,
+      "position": {
+        "lat": 41.0136116377647,
+        "lon": 28.949166229768746,
+        "alt": 0.5
+      },
+      "heading": 73.60805393020259,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17513334271857645,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 25.0,
+      "position": {
+        "lat": 41.01361159847214,
+        "lon": 28.949166198856382,
+        "alt": 0.5
+      },
+      "heading": 73.65511060612498,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18759999535494778,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 25.5,
+      "position": {
+        "lat": 41.01361155768372,
+        "lon": 28.949166169946466,
+        "alt": 0.5
+      },
+      "heading": 73.72132979079579,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19585355653724,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 26.0,
+      "position": {
+        "lat": 41.01361151550137,
+        "lon": 28.949166143111245,
+        "alt": 0.5
+      },
+      "heading": 73.80604984401096,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19970866907492102,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 26.5,
+      "position": {
+        "lat": 41.01361147203054,
+        "lon": 28.949166118417804,
+        "alt": 0.5
+      },
+      "heading": 73.90842427100345,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.199078755451524,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 27.0,
+      "position": {
+        "lat": 41.01361142737988,
+        "lon": 28.949166095927858,
+        "alt": 0.5
+      },
+      "heading": 74.02743018033928,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19397796216901728,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 27.5,
+      "position": {
+        "lat": 41.013611381660986,
+        "lon": 28.949166075697622,
+        "alt": 0.5
+      },
+      "heading": 74.16187850431048,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18452084204786806,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 28.0,
+      "position": {
+        "lat": 41.01361133498815,
+        "lon": 28.94916605777766,
+        "alt": 0.5
+      },
+      "heading": 74.31042587970661,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17091978161765609,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 28.5,
+      "position": {
+        "lat": 41.01361128747801,
+        "lon": 28.949166042212763,
+        "alt": 0.5
+      },
+      "heading": 74.47158807025599,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1534802313734977,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 29.0,
+      "position": {
+        "lat": 41.01361123924933,
+        "lon": 28.949166029041834,
+        "alt": 0.5
+      },
+      "heading": 74.64375479662374,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.13259384601643667,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 29.5,
+      "position": {
+        "lat": 41.013611190422644,
+        "lon": 28.949166018297795,
+        "alt": 0.5
+      },
+      "heading": 74.82520582579079,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1087296887332177,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 30.0,
+      "position": {
+        "lat": 41.01361114112,
+        "lon": 28.949166010007502,
+        "alt": 0.5
+      },
+      "heading": 75.0141281590534,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.08242369704835133,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 30.5,
+      "position": {
+        "lat": 41.01361109146464,
+        "lon": 28.949166004191675,
+        "alt": 0.5
+      },
+      "heading": 75.20863414690707,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.054266646822726555,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 31.0,
+      "position": {
+        "lat": 41.01361104158066,
+        "lon": 28.94916600086485,
+        "alt": 0.5
+      },
+      "heading": 75.40678034981626,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.024890884701412694,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 31.5,
+      "position": {
+        "lat": 41.01361099159275,
+        "lon": 28.94916600003534,
+        "alt": 0.5
+      },
+      "heading": 75.60658695641996,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.005043873028731744,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 32.0,
+      "position": {
+        "lat": 41.013610941625856,
+        "lon": 28.949166001705223,
+        "alt": 0.5
+      },
+      "heading": 75.80605756515224,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.034865356244595934,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 32.5,
+      "position": {
+        "lat": 41.013610891804866,
+        "lon": 28.949166005870325,
+        "alt": 0.5
+      },
+      "heading": 76.00319913162689,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.06390383872445474,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 33.0,
+      "position": {
+        "lat": 41.0136108422543,
+        "lon": 28.94916601252023,
+        "alt": 0.5
+      },
+      "heading": 76.19604188247801,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.09150717875506428,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 33.5,
+      "position": {
+        "lat": 41.013610793098024,
+        "lon": 28.94916602163832,
+        "alt": 0.5
+      },
+      "heading": 76.38265899668446,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.11705546482860699,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 34.0,
+      "position": {
+        "lat": 41.013610744458894,
+        "lon": 28.949166033201806,
+        "alt": 0.5
+      },
+      "heading": 76.56118585772847,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.13997493751870846,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 34.5,
+      "position": {
+        "lat": 41.013610696458485,
+        "lon": 28.949166047181784,
+        "alt": 0.5
+      },
+      "heading": 76.72983868422766,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1597508748802001,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 35.0,
+      "position": {
+        "lat": 41.01361064921677,
+        "lon": 28.949166063543313,
+        "alt": 0.5
+      },
+      "heading": 76.88693235288883,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17593915199433405,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 35.5,
+      "position": {
+        "lat": 41.01361060285183,
+        "lon": 28.949166082245494,
+        "alt": 0.5
+      },
+      "heading": 77.03089723570301,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18817621505698157,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 36.0,
+      "position": {
+        "lat": 41.01361055747955,
+        "lon": 28.949166103241584,
+        "alt": 0.5
+      },
+      "heading": 77.16029488314956,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19618724601329826,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 36.5,
+      "position": {
+        "lat": 41.01361051321335,
+        "lon": 28.949166126479103,
+        "alt": 0.5
+      },
+      "heading": 77.27383239670839,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19979233437876337,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 37.0,
+      "position": {
+        "lat": 41.013610470163854,
+        "lon": 28.949166151899966,
+        "alt": 0.5
+      },
+      "heading": 77.37037534707451,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19891051764079784,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 37.5,
+      "position": {
+        "lat": 41.01361042843868,
+        "lon": 28.949166179440642,
+        "alt": 0.5
+      },
+      "heading": 77.44895910900074,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1935615995022523,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 38.0,
+      "position": {
+        "lat": 41.013610388142105,
+        "lon": 28.94916620903229,
+        "alt": 0.5
+      },
+      "heading": 77.50879849951423,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18386570513293515,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 38.5,
+      "position": {
+        "lat": 41.01361034937486,
+        "lon": 28.949166240600942,
+        "alt": 0.5
+      },
+      "heading": 77.54929562320525,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17004058341727346,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 39.0,
+      "position": {
+        "lat": 41.01361031223384,
+        "lon": 28.949166274067696,
+        "alt": 0.5
+      },
+      "heading": 77.57004584620047,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.15239671678380667,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 39.5,
+      "position": {
+        "lat": 41.013610276811875,
+        "lon": 28.949166309348904,
+        "alt": 0.5
+      },
+      "heading": 77.57084183913081,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.13133034843920308,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 40.0,
+      "position": {
+        "lat": 41.013610243197505,
+        "lon": 28.949166346356378,
+        "alt": 0.5
+      },
+      "heading": 77.55167564869802,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.107314583600087,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 40.5,
+      "position": {
+        "lat": 41.01361021147474,
+        "lon": 28.94916638499762,
+        "alt": 0.5
+      },
+      "heading": 77.51273877714144,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.08088876456982802,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 41.0,
+      "position": {
+        "lat": 41.01361018172289,
+        "lon": 28.949166425176053,
+        "alt": 0.5
+      },
+      "heading": 77.45442026881081,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.05264635827316053,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 41.5,
+      "position": {
+        "lat": 41.0136101540163,
+        "lon": 28.949166466791244,
+        "alt": 0.5
+      },
+      "heading": 77.37730282296384,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.023221628268491692,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 42.0,
+      "position": {
+        "lat": 41.013610128424226,
+        "lon": 28.94916650973918,
+        "alt": 0.5
+      },
+      "heading": 77.28215697162781,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.006724609444227339,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 42.5,
+      "position": {
+        "lat": 41.01361010501064,
+        "lon": 28.94916655391251,
+        "alt": 0.5
+      },
+      "heading": 77.16993338069824,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.0365198269262268,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 43.0,
+      "position": {
+        "lat": 41.01361008383406,
+        "lon": 28.949166599200826,
+        "alt": 0.5
+      },
+      "heading": 77.04175335119949,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.06549488782753861,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 43.5,
+      "position": {
+        "lat": 41.01361006494742,
+        "lon": 28.949166645490934,
+        "alt": 0.5
+      },
+      "heading": 76.89889761561562,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.09299907474684393,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 44.0,
+      "position": {
+        "lat": 41.01361004839792,
+        "lon": 28.94916669266713,
+        "alt": 0.5
+      },
+      "heading": 76.74279354123478,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.11841470294144461,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 44.5,
+      "position": {
+        "lat": 41.013610034226936,
+        "lon": 28.949166740611496,
+        "alt": 0.5
+      },
+      "heading": 76.57500086836703,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.14117099219493287,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 45.0,
+      "position": {
+        "lat": 41.01361002246988,
+        "lon": 28.9491667892042,
+        "alt": 0.5
+      },
+      "heading": 76.39719612593477,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16075688531032417,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 45.5,
+      "position": {
+        "lat": 41.01361001315614,
+        "lon": 28.949166838323784,
+        "alt": 0.5
+      },
+      "heading": 76.21115588014996,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17673252535292705,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 46.0,
+      "position": {
+        "lat": 41.013610006308994,
+        "lon": 28.949166887847472,
+        "alt": 0.5
+      },
+      "heading": 76.01873898365174,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18873913388882085,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 46.5,
+      "position": {
+        "lat": 41.01361000194556,
+        "lon": 28.949166937651484,
+        "alt": 0.5
+      },
+      "heading": 75.82186800246538,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19650706837500193,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 47.0,
+      "position": {
+        "lat": 41.01361000007674,
+        "lon": 28.949166987611335,
+        "alt": 0.5
+      },
+      "heading": 75.62251000635797,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19986187774958353,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 47.5,
+      "position": {
+        "lat": 41.01361000070721,
+        "lon": 28.94916703760215,
+        "alt": 0.5
+      },
+      "heading": 75.42265691452764,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19872822022655254,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 48.0,
+      "position": {
+        "lat": 41.01361000383539,
+        "lon": 28.94916708749898,
+        "alt": 0.5
+      },
+      "heading": 75.2243055930053,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1931315553098556,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 48.5,
+      "position": {
+        "lat": 41.01361000945346,
+        "lon": 28.94916713717711,
+        "alt": 0.5
+      },
+      "heading": 75.02943790262937,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.183197572027828,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 49.0,
+      "position": {
+        "lat": 41.013610017547386,
+        "lon": 28.94916718651237,
+        "alt": 0.5
+      },
+      "heading": 74.8400008969474,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16914936622858687,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 49.5,
+      "position": {
+        "lat": 41.01361002809693,
+        "lon": 28.94916723538144,
+        "alt": 0.5
+      },
+      "heading": 74.65788736790061,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.15130243032824842,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 50.0,
+      "position": {
+        "lat": 41.01361004107572,
+        "lon": 28.949167283662185,
+        "alt": 0.5
+      },
+      "heading": 74.48491693367252,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.13005756803142338,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 50.5,
+      "position": {
+        "lat": 41.01361005645133,
+        "lon": 28.94916733123392,
+        "alt": 0.5
+      },
+      "heading": 74.32281785766548,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.10589189314409315,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 51.0,
+      "position": {
+        "lat": 41.013610074185316,
+        "lon": 28.94916737797774,
+        "alt": 0.5
+      },
+      "heading": 74.17320978026417,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.07934811462612273,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 51.5,
+      "position": {
+        "lat": 41.01361009423336,
+        "lon": 28.949167423776817,
+        "alt": 0.5
+      },
+      "heading": 74.03758753592409,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.05102234851803488,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 52.0,
+      "position": {
+        "lat": 41.013610116545344,
+        "lon": 28.94916746851667,
+        "alt": 0.5
+      },
+      "heading": 73.91730621727996,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.02155073045988881,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 52.5,
+      "position": {
+        "lat": 41.013610141065506,
+        "lon": 28.949167512085477,
+        "alt": 0.5
+      },
+      "heading": 73.81356763550792,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.008404870543768159,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 53.0,
+      "position": {
+        "lat": 41.01361016773256,
+        "lon": 28.949167554374334,
+        "alt": 0.5
+      },
+      "heading": 73.72740831222565,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.038171716274837536,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 53.5,
+      "position": {
+        "lat": 41.01361019647984,
+        "lon": 28.949167595277547,
+        "alt": 0.5
+      },
+      "heading": 73.65968912291088,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.06708130755171227,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 54.0,
+      "position": {
+        "lat": 41.01361022723551,
+        "lon": 28.949167634692873,
+        "alt": 0.5
+      },
+      "heading": 73.61108669531828,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.09448439727969324,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 54.5,
+      "position": {
+        "lat": 41.013610259922686,
+        "lon": 28.949167672521803,
+        "alt": 0.5
+      },
+      "heading": 73.5820866488385,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.11976557114104686,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 55.0,
+      "position": {
+        "lat": 41.013610294459674,
+        "lon": 28.949167708669773,
+        "alt": 0.5
+      },
+      "heading": 73.57297874234985,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.14235706847382462,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 55.5,
+      "position": {
+        "lat": 41.01361033076014,
+        "lon": 28.94916774304644,
+        "alt": 0.5
+      },
+      "heading": 73.58385397904328,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.16175153295230973,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 56.0,
+      "position": {
+        "lat": 41.01361036873336,
+        "lon": 28.94916777556588,
+        "alt": 0.5
+      },
+      "heading": 73.61460369714862,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17751340671630092,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 56.5,
+      "position": {
+        "lat": 41.013610408284414,
+        "lon": 28.949167806146804,
+        "alt": 0.5
+      },
+      "heading": 73.66492065564708,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1892887120616418,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 57.0,
+      "position": {
+        "lat": 41.013610449314456,
+        "lon": 28.949167834712785,
+        "alt": 0.5
+      },
+      "heading": 73.73430210412191,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19681300101632856,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 57.5,
+      "position": {
+        "lat": 41.01361049172092,
+        "lon": 28.949167861192418,
+        "alt": 0.5
+      },
+      "heading": 73.8220548060744,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19991729427184346,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 58.0,
+      "position": {
+        "lat": 41.01361053539782,
+        "lon": 28.949167885519515,
+        "alt": 0.5
+      },
+      "heading": 73.92730196551385,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19853187609412665,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 58.5,
+      "position": {
+        "lat": 41.01361058023598,
+        "lon": 28.949167907633278,
+        "alt": 0.5
+      },
+      "heading": 74.04899198761319,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19268785998866522,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 59.0,
+      "position": {
+        "lat": 41.01361062612333,
+        "lon": 28.94916792747843,
+        "alt": 0.5
+      },
+      "heading": 74.18590898589702,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1825164899582369,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 59.5,
+      "position": {
+        "lat": 41.013610672945184,
+        "lon": 28.949167945005367,
+        "alt": 0.5
+      },
+      "heading": 74.33668493097719,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.16824619304555236,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 60.0,
+      "position": {
+        "lat": 41.0136107205845,
+        "lon": 28.949167960170286,
+        "alt": 0.5
+      },
+      "heading": 74.49981331945038,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.15019744935433524,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 60.5,
+      "position": {
+        "lat": 41.013610768922206,
+        "lon": 28.949167972935278,
+        "alt": 0.5
+      },
+      "heading": 74.67366422638206,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1287755947571084,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 61.0,
+      "position": {
+        "lat": 41.013610817837495,
+        "lon": 28.94916798326844,
+        "alt": 0.5
+      },
+      "heading": 74.8565005909776,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.10446171792534631,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 61.5,
+      "position": {
+        "lat": 41.01361086720809,
+        "lon": 28.949167991143938,
+        "alt": 0.5
+      },
+      "heading": 75.04649557271965,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.0778018561150831,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 62.0,
+      "position": {
+        "lat": 41.013610916910594,
+        "lon": 28.949167996542098,
+        "alt": 0.5
+      },
+      "heading": 75.24175080455464,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.04939473234732487,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 62.5,
+      "position": {
+        "lat": 41.01361096682078,
+        "lon": 28.94916799944942,
+        "alt": 0.5
+      },
+      "heading": 75.44031536074885,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.019878309379769636,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 63.0,
+      "position": {
+        "lat": 41.0136110168139,
+        "lon": 28.949167999858634,
+        "alt": 0.5
+      },
+      "heading": 75.64020524989354,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.010084537561362246,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 63.5,
+      "position": {
+        "lat": 41.01361106676499,
+        "lon": 28.94916799776873,
+        "alt": 0.5
+      },
+      "heading": 75.83942323829115,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.03982090752983965,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 64.0,
+      "position": {
+        "lat": 41.0136111165492,
+        "lon": 28.94916799318492,
+        "alt": 0.5
+      },
+      "heading": 76.03597880565434,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.06866298576397908,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 64.5,
+      "position": {
+        "lat": 41.013611166042104,
+        "lon": 28.949167986118663,
+        "alt": 0.5
+      },
+      "heading": 76.22790803372665,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.09596304136647382,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 65.0,
+      "position": {
+        "lat": 41.01361121511999,
+        "lon": 28.949167976587624,
+        "alt": 0.5
+      },
+      "heading": 76.41329322910454,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12110797394392021,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 65.5,
+      "position": {
+        "lat": 41.01361126366018,
+        "lon": 28.949167964615626,
+        "alt": 0.5
+      },
+      "heading": 76.590282084196,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1435330825198858,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 66.0,
+      "position": {
+        "lat": 41.01361131154136,
+        "lon": 28.949167950232592,
+        "alt": 0.5
+      },
+      "heading": 76.7571061848657,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16273474750142108,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 66.5,
+      "position": {
+        "lat": 41.01361135864385,
+        "lon": 28.94916793347447,
+        "alt": 0.5
+      },
+      "heading": 76.91209867984446,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17828174088937332,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 67.0,
+      "position": {
+        "lat": 41.01361140484992,
+        "lon": 28.949167914383146,
+        "alt": 0.5
+      },
+      "heading": 77.05371093535615,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18982491072957872,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 67.5,
+      "position": {
+        "lat": 41.013611450044074,
+        "lon": 28.949167893006344,
+        "alt": 0.5
+      },
+      "heading": 77.1805280085545,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19710502231302396,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 68.0,
+      "position": {
+        "lat": 41.01361149411335,
+        "lon": 28.94916786939749,
+        "alt": 0.5
+      },
+      "heading": 77.29128278516426,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19995858002853384,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 68.5,
+      "position": {
+        "lat": 41.0136115369476,
+        "lon": 28.949167843615594,
+        "alt": 0.5
+      },
+      "heading": 77.38486864006818,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19832149912172364,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 69.0,
+      "position": {
+        "lat": 41.013611578439765,
+        "lon": 28.9491678157251,
+        "alt": 0.5
+      },
+      "heading": 77.46035049433947,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19223054490042332,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 69.5,
+      "position": {
+        "lat": 41.013611618486124,
+        "lon": 28.949167785795716,
+        "alt": 0.5
+      },
+      "heading": 77.51697415824121,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18182250706512512,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 70.0,
+      "position": {
+        "lat": 41.0136116569866,
+        "lon": 28.949167753902252,
+        "alt": 0.5
+      },
+      "heading": 77.554173866841,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1673311277072112,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 70.5,
+      "position": {
+        "lat": 41.01361169384494,
+        "lon": 28.94916772012443,
+        "alt": 0.5
+      },
+      "heading": 77.5715779329471,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.14908185196550083,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 71.0,
+      "position": {
+        "lat": 41.01361172896904,
+        "lon": 28.949167684546666,
+        "alt": 0.5
+      },
+      "heading": 77.56901246088398,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12748451923004778,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 71.5,
+      "position": {
+        "lat": 41.01361176227109,
+        "lon": 28.949167647257894,
+        "alt": 0.5
+      },
+      "heading": 77.54650308400049,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1030241590330046,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 72.0,
+      "position": {
+        "lat": 41.01361179366786,
+        "lon": 28.949167608351313,
+        "alt": 0.5
+      },
+      "heading": 77.50427470854981,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.0762500983309887,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 72.5,
+      "position": {
+        "lat": 41.01361182308088,
+        "lon": 28.94916756792417,
+        "alt": 0.5
+      },
+      "heading": 77.44274926650063,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.04776362480591655,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 73.0,
+      "position": {
+        "lat": 41.01361185043662,
+        "lon": 28.949167526077517,
+        "alt": 0.5
+      },
+      "heading": 77.36254149973226,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.018204483239969576,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 73.5,
+      "position": {
+        "lat": 41.01361187566671,
+        "lon": 28.94916748291594,
+        "alt": 0.5
+      },
+      "heading": 77.26445281773712,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.011763491773010585,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 74.0,
+      "position": {
+        "lat": 41.01361189870809,
+        "lon": 28.949167438547327,
+        "alt": 0.5
+      },
+      "heading": 77.1494632902019,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.041467284121351755,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 74.5,
+      "position": {
+        "lat": 41.01361191950318,
+        "lon": 28.949167393082572,
+        "alt": 0.5
+      },
+      "heading": 77.01872185447522,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.07023981066648764,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 75.0,
+      "position": {
+        "lat": 41.013611937999976,
+        "lon": 28.949167346635317,
+        "alt": 0.5
+      },
+      "heading": 76.8735348357655,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.0974349024921019,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 75.5,
+      "position": {
+        "lat": 41.01361195415226,
+        "lon": 28.949167299321655,
+        "alt": 0.5
+      },
+      "heading": 76.71535289477123,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1224418164649293,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 76.0,
+      "position": {
+        "lat": 41.01361196791967,
+        "lon": 28.94916725125984,
+        "alt": 0.5
+      },
+      "heading": 76.54575653315885,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.14469895120884899,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 76.5,
+      "position": {
+        "lat": 41.01361197926778,
+        "lon": 28.94916720257001,
+        "alt": 0.5
+      },
+      "heading": 76.36644030171249,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.16370645946104703,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 77.0,
+      "position": {
+        "lat": 41.01361198816823,
+        "lon": 28.94916715337386,
+        "alt": 0.5
+      },
+      "heading": 76.17919586894266,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17903747356393607,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 77.5,
+      "position": {
+        "lat": 41.013611994598776,
+        "lon": 28.949167103794355,
+        "alt": 0.5
+      },
+      "heading": 75.98589411932686,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1903476919924707,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 78.0,
+      "position": {
+        "lat": 41.01361199854334,
+        "lon": 28.94916705395542,
+        "alt": 0.5
+      },
+      "heading": 75.78846646005015,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19738311162412975,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 78.5,
+      "position": {
+        "lat": 41.01361199999207,
+        "lon": 28.94916700398162,
+        "alt": 0.5
+      },
+      "heading": 75.58888552302312,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19998573210145126,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 79.0,
+      "position": {
+        "lat": 41.013611998941336,
+        "lon": 28.949166953997874,
+        "alt": 0.5
+      },
+      "heading": 75.3891454549959,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1980971041794313,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 79.5,
+      "position": {
+        "lat": 41.013611995393774,
+        "lon": 28.949166904129108,
+        "alt": 0.5
+      },
+      "heading": 75.19124199270288,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19175964236955834,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 80.0,
+      "position": {
+        "lat": 41.013611989358246,
+        "lon": 28.949166854499964,
+        "alt": 0.5
+      },
+      "heading": 74.99715252212113,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18111567240132478,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 80.5,
+      "position": {
+        "lat": 41.01361198084983,
+        "lon": 28.949166805234498,
+        "alt": 0.5
+      },
+      "heading": 74.80881632108324,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.16640423489317996,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 81.0,
+      "position": {
+        "lat": 41.01361196988981,
+        "lon": 28.949166756455845,
+        "alt": 0.5
+      },
+      "heading": 74.62811518265433,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1479557170155787,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 81.5,
+      "position": {
+        "lat": 41.013611956505564,
+        "lon": 28.949166708285926,
+        "alt": 0.5
+      },
+      "heading": 74.4568546128777,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.12618443270740803,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 82.0,
+      "position": {
+        "lat": 41.013611940730556,
+        "lon": 28.949166660845137,
+        "alt": 0.5
+      },
+      "heading": 74.29674579075535,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.10157931807812504,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 82.5,
+      "position": {
+        "lat": 41.013611922604206,
+        "lon": 28.94916661425206,
+        "alt": 0.5
+      },
+      "heading": 74.149388470713,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.07469295095682295,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 83.0,
+      "position": {
+        "lat": 41.01361190217183,
+        "lon": 28.949166568623156,
+        "alt": 0.5
+      },
+      "heading": 74.01625499838266,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.04612914118547914,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 83.5,
+      "position": {
+        "lat": 41.01361187948449,
+        "lon": 28.949166524072464,
+        "alt": 0.5
+      },
+      "heading": 73.89867559941176,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.016529370351636548,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 84.0,
+      "position": {
+        "lat": 41.013611854598906,
+        "lon": 28.949166480711344,
+        "alt": 0.5
+      },
+      "heading": 73.79782508828825,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.013441614505094984,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 84.5,
+      "position": {
+        "lat": 41.013611827577265,
+        "lon": 28.949166438648177,
+        "alt": 0.5
+      },
+      "heading": 73.71471112998252,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.04311072967844357,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 85.0,
+      "position": {
+        "lat": 41.01361179848711,
+        "lon": 28.949166397988098,
+        "alt": 0.5
+      },
+      "heading": 73.65016417169214,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.07181167080443367,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 85.5,
+      "position": {
+        "lat": 41.01361176740115,
+        "lon": 28.94916635883273,
+        "alt": 0.5
+      },
+      "heading": 73.60482914528797,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.09889987662093194,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 86.0,
+      "position": {
+        "lat": 41.013611734397095,
+        "lon": 28.94916632127995,
+        "alt": 0.5
+      },
+      "heading": 73.57915902336806,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12376700442400786,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 86.5,
+      "position": {
+        "lat": 41.01361169955742,
+        "lon": 28.94916628542362,
+        "alt": 0.5
+      },
+      "heading": 73.57341029330523,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.14585459213354982,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 87.0,
+      "position": {
+        "lat": 41.013611662969225,
+        "lon": 28.949166251353354,
+        "alt": 0.5
+      },
+      "heading": 73.58764039450999,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16466660014761592,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 87.5,
+      "position": {
+        "lat": 41.01361162472395,
+        "lon": 28.949166219154314,
+        "alt": 0.5
+      },
+      "heading": 73.62170714451494,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17978055132249346,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 88.0,
+      "position": {
+        "lat": 41.01361158491719,
+        "lon": 28.949166188906986,
+        "alt": 0.5
+      },
+      "heading": 73.67527015961501,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1908570188985394,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 88.5,
+      "position": {
+        "lat": 41.013611543648445,
+        "lon": 28.949166160686964,
+        "alt": 0.5
+      },
+      "heading": 73.74779425586888,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19764724929344354,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 89.0,
+      "position": {
+        "lat": 41.013611501020854,
+        "lon": 28.94916613456479,
+        "alt": 0.5
+      },
+      "heading": 73.8385547964801,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19999874857140415,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 89.5,
+      "position": {
+        "lat": 41.013611457140975,
+        "lon": 28.949166110605752,
+        "alt": 0.5
+      },
+      "heading": 73.94664493212828,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1978587071281701,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 90.0,
+      "position": {
+        "lat": 41.013611412118486,
+        "lon": 28.949166088869738,
+        "alt": 0.5
+      },
+      "heading": 74.0709846619079,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19127518568090063,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 90.5,
+      "position": {
+        "lat": 41.01361136606591,
+        "lon": 28.949166069411074,
+        "alt": 0.5
+      },
+      "heading": 74.21033162434026,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18039603592807157,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 91.0,
+      "position": {
+        "lat": 41.01361131909836,
+        "lon": 28.949166052278397,
+        "alt": 0.5
+      },
+      "heading": 74.36329351063868,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16546558011907575,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 91.5,
+      "position": {
+        "lat": 41.01361127133323,
+        "lon": 28.94916603751453,
+        "alt": 0.5
+      },
+      "heading": 74.5283419761978,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.14681912410323097,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 92.0,
+      "position": {
+        "lat": 41.013611222889914,
+        "lon": 28.949166025156376,
+        "alt": 0.5
+      },
+      "heading": 74.70382791130747,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12487542708327884,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 92.5,
+      "position": {
+        "lat": 41.01361117388948,
+        "lon": 28.949166015234827,
+        "alt": 0.5
+      },
+      "heading": 74.88799791851203,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.10012729718648301,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 93.0,
+      "position": {
+        "lat": 41.01361112445442,
+        "lon": 28.949166007774675,
+        "alt": 0.5
+      },
+      "heading": 75.07901183197802,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.07313052405652427,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 93.5,
+      "position": {
+        "lat": 41.01361107470829,
+        "lon": 28.94916600279457,
+        "alt": 0.5
+      },
+      "heading": 75.27496110382286,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.044491397016310684,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 94.0,
+      "position": {
+        "lat": 41.01361102477542,
+        "lon": 28.949166000306956,
+        "alt": 0.5
+      },
+      "heading": 75.47388787369452,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.014853089116872262,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 94.5,
+      "position": {
+        "lat": 41.01361097478063,
+        "lon": 28.94916600031806,
+        "alt": 0.5
+      },
+      "heading": 75.67380453106489,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.0151187871427709,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 95.0,
+      "position": {
+        "lat": 41.01361092484888,
+        "lon": 28.949166002827845,
+        "alt": 0.5
+      },
+      "heading": 75.87271357477717,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.04475112803735928,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 95.5,
+      "position": {
+        "lat": 41.01361087510496,
+        "lon": 28.94916600783004,
+        "alt": 0.5
+      },
+      "heading": 76.06862757141718,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.07337845507393558,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 96.0,
+      "position": {
+        "lat": 41.01361082567322,
+        "lon": 28.949166015312144,
+        "alt": 0.5
+      },
+      "heading": 76.25958901309106,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.10035786020411422,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 96.5,
+      "position": {
+        "lat": 41.0136107766772,
+        "lon": 28.949166025255455,
+        "alt": 0.5
+      },
+      "heading": 76.44368987619704,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.12508344415281833,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 97.0,
+      "position": {
+        "lat": 41.01361072823937,
+        "lon": 28.94916603763512,
+        "alt": 0.5
+      },
+      "heading": 76.61909068576665,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.14699992360975506,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 97.5,
+      "position": {
+        "lat": 41.0136106804808,
+        "lon": 28.949166052420196,
+        "alt": 0.5
+      },
+      "heading": 76.78403889489046,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1656151016954489,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 98.0,
+      "position": {
+        "lat": 41.01361063352087,
+        "lon": 28.949166069573728,
+        "alt": 0.5
+      },
+      "heading": 76.93688639558754,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18051092164203708,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 98.5,
+      "position": {
+        "lat": 41.01361058747694,
+        "lon": 28.94916608905284,
+        "alt": 0.5
+      },
+      "heading": 77.07610598615555,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19135285544700212,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 99.0,
+      "position": {
+        "lat": 41.0136105424641,
+        "lon": 28.949166110808846,
+        "alt": 0.5
+      },
+      "heading": 77.20030663046546,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19789741665090704,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 99.5,
+      "position": {
+        "lat": 41.01361049859487,
+        "lon": 28.94916613478737,
+        "alt": 0.5
+      },
+      "heading": 77.3082473567346,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19999762851834862,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 100.0,
+      "position": {
+        "lat": 41.013610455978885,
+        "lon": 28.94916616092847,
+        "alt": 0.5
+      },
+      "heading": 77.39884965690652,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19760632481857238,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 100.5,
+      "position": {
+        "lat": 41.01361041472267,
+        "lon": 28.949166189166814,
+        "alt": 0.5
+      },
+      "heading": 77.47120826274704,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.19077720907733048,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 101.0,
+      "position": {
+        "lat": 41.01361037492935,
+        "lon": 28.94916621943182,
+        "alt": 0.5
+      },
+      "heading": 77.52460019098521,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.17966364851147126,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 101.5,
+      "position": {
+        "lat": 41.01361033669838,
+        "lon": 28.94916625164784,
+        "alt": 0.5
+      },
+      "heading": 77.55849196712308,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1645152297318885,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 102.0,
+      "position": {
+        "lat": 41.01361030012531,
+        "lon": 28.949166285734346,
+        "alt": 0.5
+      },
+      "heading": 77.5725449557366,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.14567215356631918,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 102.5,
+      "position": {
+        "lat": 41.013610265301566,
+        "lon": 28.94916632160615,
+        "alt": 0.5
+      },
+      "heading": 77.56661874400886,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1235575948821792,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 103.0,
+      "position": {
+        "lat": 41.013610232314186,
+        "lon": 28.94916635917358,
+        "alt": 0.5
+      },
+      "heading": 77.5407725446885,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.09866819899135566,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 103.5,
+      "position": {
+        "lat": 41.013610201245626,
+        "lon": 28.949166398342747,
+        "alt": 0.5
+      },
+      "heading": 77.49526460445549,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.07156292806720216,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 104.0,
+      "position": {
+        "lat": 41.01361017217353,
+        "lon": 28.94916643901574,
+        "alt": 0.5
+      },
+      "heading": 77.43054962360574,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.04285050805917754,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 104.5,
+      "position": {
+        "lat": 41.01361014517057,
+        "lon": 28.949166481090906,
+        "alt": 0.5
+      },
+      "heading": 77.34727421283596,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.013175758020358612,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 105.0,
+      "position": {
+        "lat": 41.013610120304236,
+        "lon": 28.94916652446307,
+        "alt": 0.5
+      },
+      "heading": 77.24627043252337,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.016794891138349366,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 105.5,
+      "position": {
+        "lat": 41.013610097636686,
+        "lon": 28.94916656902383,
+        "alt": 0.5
+      },
+      "heading": 77.12854747905344,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.04638836324972628,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 106.0,
+      "position": {
+        "lat": 41.01361007722458,
+        "lon": 28.94916661466181,
+        "alt": 0.5
+      },
+      "heading": 76.99528160126322,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.07494005272989175,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 106.5,
+      "position": {
+        "lat": 41.013610059118925,
+        "lon": 28.94916666126293,
+        "alt": 0.5
+      },
+      "heading": 76.84780434775173,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.10180875018691218,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 107.0,
+      "position": {
+        "lat": 41.013610043364984,
+        "lon": 28.949166708710717,
+        "alt": 0.5
+      },
+      "heading": 76.68758926248657,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12639104260137698,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 107.5,
+      "position": {
+        "lat": 41.01361003000213,
+        "lon": 28.949166756886576,
+        "alt": 0.5
+      },
+      "heading": 76.51623716163965,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1481348646819348,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 108.0,
+      "position": {
+        "lat": 41.01361001906377,
+        "lon": 28.949166805670092,
+        "alt": 0.5
+      },
+      "heading": 76.33546013876114,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16655189706155596,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 108.5,
+      "position": {
+        "lat": 41.01361001057723,
+        "lon": 28.94916685493933,
+        "alt": 0.5
+      },
+      "heading": 76.14706445810671,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.18122853289776014,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 109.0,
+      "position": {
+        "lat": 41.013610004563745,
+        "lon": 28.949166904571147,
+        "alt": 0.5
+      },
+      "heading": 75.95293250704214,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1918351665906157,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 109.5,
+      "position": {
+        "lat": 41.01361000103832,
+        "lon": 28.949166954441488,
+        "alt": 0.5
+      },
+      "heading": 75.75500398785094,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19813359601392677,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 110.0,
+      "position": {
+        "lat": 41.01361000000979,
+        "lon": 28.949167004425696,
+        "alt": 0.5
+      },
+      "heading": 75.55525653687044,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19998237202145344,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 110.5,
+      "position": {
+        "lat": 41.013610001480714,
+        "lon": 28.949167054398846,
+        "alt": 0.5
+      },
+      "heading": 75.3556859646031,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.1973399750897916,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 111.0,
+      "position": {
+        "lat": 41.01361000544741,
+        "lon": 28.949167104236025,
+        "alt": 0.5
+      },
+      "heading": 75.15828631423773,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.19026574775735655,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 111.5,
+      "position": {
+        "lat": 41.01361001189997,
+        "lon": 28.94916715381267,
+        "alt": 0.5
+      },
+      "heading": 74.96502993782916,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.17891856191890562,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 112.0,
+      "position": {
+        "lat": 41.01361002082227,
+        "lon": 28.949167203004862,
+        "alt": 0.5
+      },
+      "heading": 74.77784778920838,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.16355325090528838,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 112.5,
+      "position": {
+        "lat": 41.013610032192,
+        "lon": 28.949167251689648,
+        "alt": 0.5
+      },
+      "heading": 74.59861013053023,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.144514886476227,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 113.0,
+      "position": {
+        "lat": 41.01361004598075,
+        "lon": 28.949167299745344,
+        "alt": 0.5
+      },
+      "heading": 74.42910784523212,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.12223102925251922,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 113.5,
+      "position": {
+        "lat": 41.013610062154044,
+        "lon": 28.94916734705183,
+        "alt": 0.5
+      },
+      "heading": 74.27103454411876,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.09720212662626374,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 114.0,
+      "position": {
+        "lat": 41.01361008067147,
+        "lon": 28.949167393490864,
+        "alt": 0.5
+      },
+      "heading": 74.12596964336277,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.06999027379133375,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 114.5,
+      "position": {
+        "lat": 41.01361010148674,
+        "lon": 28.94916743894638,
+        "alt": 0.5
+      },
+      "heading": 73.99536258350042,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.04120659029712653,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 115.0,
+      "position": {
+        "lat": 41.013610124547824,
+        "lon": 28.94916748330476,
+        "alt": 0.5
+      },
+      "heading": 73.88051834710092,
+      "heading_setpoint": 80.57295915545126,
+      "speed": 0.011497495620984913,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 115.5,
+      "position": {
+        "lat": 41.01361014979708,
+        "lon": 28.949167526455124,
+        "alt": 0.5
+      },
+      "heading": 73.7825844198119,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.018469808019674173,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 116.0,
+      "position": {
+        "lat": 41.0136101771714,
+        "lon": 28.949167568289628,
+        "alt": 0.5
+      },
+      "heading": 73.70253932506218,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.0480223195907549,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 116.5,
+      "position": {
+        "lat": 41.013610206602365,
+        "lon": 28.949167608703704,
+        "alt": 0.5
+      },
+      "heading": 73.64118284697912,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.07649635339380555,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 117.0,
+      "position": {
+        "lat": 41.01361023801641,
+        "lon": 28.949167647596337,
+        "alt": 0.5
+      },
+      "heading": 73.59912803920996,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.10325244401598539,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 117.5,
+      "position": {
+        "lat": 41.01361027133502,
+        "lon": 28.949167684870318,
+        "alt": 0.5
+      },
+      "heading": 73.57679509949247,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.12768970734462667,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 118.0,
+      "position": {
+        "lat": 41.01361030647491,
+        "lon": 28.949167720432477,
+        "alt": 0.5
+      },
+      "heading": 73.57440717117801,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.14925933512898326,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 118.5,
+      "position": {
+        "lat": 41.013610343348255,
+        "lon": 28.949167754193933,
+        "alt": 0.5
+      },
+      "heading": 73.59198811365695,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1674769200303769,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 119.0,
+      "position": {
+        "lat": 41.01361038186288,
+        "lon": 28.949167786070294,
+        "alt": 0.5
+      },
+      "heading": 73.62936226396353,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.18193333436670506,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    },
+    {
+      "timestamp": 119.5,
+      "position": {
+        "lat": 41.013610421922536,
+        "lon": 28.94916781598189,
+        "alt": 0.5
+      },
+      "heading": 73.68615619194215,
+      "heading_setpoint": 80.57295915545126,
+      "speed": -0.1923039182381543,
+      "speed_setpoint": 4.0,
+      "thruster_forces": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "environmental": {
+        "current_speed": 0.5,
+        "current_direction": 180,
+        "wind_speed": 3.0,
+        "wind_direction": 225
+      }
+    }
+  ],
+  "performance_metrics": {
+    "speed_control": {
+      "mean_error": 3.9933320478989267,
+      "max_error": 4.199997628518348,
+      "std_error": 0.14101933542912198
+    },
+    "heading_control": {
+      "mean_error": 4.948281668338173,
+      "max_error": 6.999980413101412,
+      "std_error": 1.4250814086667283
+    },
+    "position_accuracy": {
+      "mean_variation": 0.004879725188396472,
+      "max_variation": 0.005565394551591113
+    },
+    "total_duration": 119.5,
+    "data_points": 240
+  }
+}

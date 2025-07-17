@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YKİ Gelişmiş Harita - Debug Özellikleri</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Leaflet CSS ve JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- QWebChannel için gerekli JavaScript -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        #map {
+            height: calc(100% - 50px);
+            width: 100%;
+        }
+        
+        #debug-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            min-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #debug-panel h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .debug-section {
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        
+        .debug-coords {
+            font-family: monospace;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .debug-toggle {
+            position: absolute;
+            top: 10px;
+            right: 320px;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            z-index: 1001;
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .status-item {
+            margin-right: 30px;
+        }
+        
+        /* Araç simgesi için özel stil */
+        .vessel-marker {
+            width: 40px !important;
+            height: 40px !important;
+            background: transparent !important;
+            border: none !important;
+            text-align: center;
+            line-height: 40px;
+        }
+        
+        .vessel-icon {
+            font-size: 28px;
+            display: inline-block;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        /* Waypoint'ler için farklı renkler */
+        .waypoint-1 { color: #e74c3c; }
+        .waypoint-2 { color: #3498db; }
+        .waypoint-3 { color: #2ecc71; }
+        .waypoint-4 { color: #f39c12; }
+        .waypoint-5 { color: #9b59b6; }
+        .waypoint-6 { color: #1abc9c; }
+        
+        /* Debug çizgileri */
+        .debug-crosshair {
+            stroke: red;
+            stroke-width: 2;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <!-- Debug Paneli -->
+    <div id="debug-toggle" class="debug-toggle" onclick="toggleDebugPanel()">
+        🐛 Debug
+    </div>
+    
+    <div id="debug-panel" style="display: none;">
+        <h4>🔍 Debug Bilgileri</h4>
+        
+        <div class="debug-section">
+            <strong>Araç Konumu:</strong>
+            <div id="vehicle-coords" class="debug-coords">Bağlantı bekleniyor...</div>
+            <div id="vehicle-heading">Heading: N/A</div>
+        </div>
+        
+        <div class="debug-section">
+            <strong>Harita Durumu:</strong>
+            <div id="map-center" class="debug-coords">Merkez: N/A</div>
+            <div id="map-zoom">Zoom: N/A</div>
+            <div id="map-bounds" class="debug-coords">Bounds: N/A</div>
+        </div>
+        
+        <div class="debug-section">
+            <strong>Koordinat Testleri:</strong>
+            <div id="coord-tests">
+                <button onclick="testKnownLocation()">Bilinen Konum Testi</button>
+                <button onclick="showCrosshair()">Artı İşareti Göster</button>
+                <button onclick="clearDebugMarkers()">Debug Temizle</button>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <strong>Waypoint'ler:</strong>
+            <div id="waypoint-list">Henüz waypoint yok</div>
+        </div>
+        
+        <div class="debug-section">
+            <strong>Log:</strong>
+            <div id="debug-log" style="max-height: 100px; overflow-y: auto; font-size: 10px;">
+                Sistem başlatıldı...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Durum Çubuğu -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span id="connection-status">🔴 Bağlantı: Kapalı</span>
+        </div>
+        <div class="status-item">
+            <span id="vehicle-mode">Mod: N/A</span>
+        </div>
+        <div class="status-item">
+            <span id="gps-status">GPS: N/A</span>
+        </div>
+        <div class="status-item">
+            <span id="waypoint-count">Waypoint: 0</span>
+        </div>
+        <div class="status-item">
+            <span id="coordinate-accuracy">Accuracy: N/A</span>
+        </div>
+    </div>
+    
+    <script>
+        // Global değişkenler
+        var map = L.map('map').setView([41.015137, 28.979530], 13);
+        var vehicleMarker = null;
+        var waypoints = [];
+        var missionPath = null;
+        var autoFollow = true;
+        var firstConnection = true;
+        var debugMarkers = [];
+        var lastKnownPosition = null;
+        var debugEnabled = false;
+        
+        // Tile layer ekle
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 22,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        
+        // Gelişmiş araç ikonu - doğru anchor noktası ile
+        function createVehicleIcon(heading = 0) {
+            return L.divIcon({
+                html: `<div class="vessel-icon" style="transform: rotate(${heading}deg);">⛵</div>`,
+                className: 'vessel-marker',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20], // ✅ TAM MERKEZ - Bu çok önemli!
+                popupAnchor: [0, -20]
+            });
+        }
+        
+        // Debug loglama fonksiyonu
+        function debugLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('debug-log');
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Konsola da yazdır
+            console.log(`[YKİ Debug] ${message}`);
+        }
+        
+        // Debug panelini aç/kapat
+        function toggleDebugPanel() {
+            const panel = document.getElementById('debug-panel');
+            debugEnabled = !debugEnabled;
+            panel.style.display = debugEnabled ? 'block' : 'none';
+            debugLog(`Debug panel ${debugEnabled ? 'açıldı' : 'kapatıldı'}`);
+        }
+        
+        // Koordinat precision validator
+        function validateCoordinatePrecision(lat, lon) {
+            const latStr = lat.toString();
+            const lonStr = lon.toString();
+            const latDecimals = latStr.includes('.') ? latStr.split('.')[1].length : 0;
+            const lonDecimals = lonStr.includes('.') ? lonStr.split('.')[1].length : 0;
+            
+            // Precision → Accuracy mapping
+            const precisionAccuracy = {
+                1: 11100, 2: 1110, 3: 111, 4: 11.1, 5: 1.11, 6: 0.111, 7: 0.0111
+            };
+            
+            const accuracy = Math.max(
+                precisionAccuracy[latDecimals] || 0.001,
+                precisionAccuracy[lonDecimals] || 0.001
+            );
+            
+            return {
+                latDecimals,
+                lonDecimals,
+                accuracy,
+                sufficient: accuracy <= 1.0
+            };
+        }
+        
+        // Harita durumunu güncelle
+        function updateMapStatus() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const bounds = map.getBounds();
+            
+            document.getElementById('map-center').textContent = 
+                `Merkez: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`;
+            document.getElementById('map-zoom').textContent = `Zoom: ${zoom}`;
+            document.getElementById('map-bounds').textContent = 
+                `Bounds: ${bounds.toBBoxString()}`;
+        }
+        
+        // Waypoint listesini güncelle
+        function updateWaypointList() {
+            const listDiv = document.getElementById('waypoint-list');
+            if (waypoints.length === 0) {
+                listDiv.innerHTML = 'Henüz waypoint yok';
+                return;
+            }
+            
+            let html = '';
+            waypoints.forEach((wp, index) => {
+                const pos = wp.getLatLng();
+                html += `<div>WP${index + 1}: ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}</div>`;
+            });
+            listDiv.innerHTML = html;
+            
+            document.getElementById('waypoint-count').textContent = `Waypoint: ${waypoints.length}`;
+        }
+        
+        // Bilinen konum testi
+        function testKnownLocation() {
+            // İstanbul Galata Kulesi - bilinen doğru koordinat
+            const testLat = 41.025631;
+            const testLon = 28.974298;
+            
+            const testMarker = L.marker([testLat, testLon], {
+                icon: L.divIcon({
+                    html: '📍',
+                    className: 'test-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            
+            testMarker.bindPopup(`Test Konumu: Galata Kulesi<br>
+                                 Lat: ${testLat}<br>
+                                 Lon: ${testLon}<br>
+                                 <small>Bu konum Google Maps ile doğrulanabilir</small>`);
+            
+            debugMarkers.push(testMarker);
+            debugLog(`Test konumu eklendi: Galata Kulesi (${testLat}, ${testLon})`);
+            
+            // Haritayı test konumuna odakla
+            map.setView([testLat, testLon], 16);
+        }
+        
+        // Artı işareti göster
+        function showCrosshair() {
+            if (lastKnownPosition) {
+                const lat = lastKnownPosition.lat;
+                const lon = lastKnownPosition.lng;
+                
+                // SVG ile hassas artı işareti çiz
+                const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgElement.setAttribute("width", "21");
+                svgElement.setAttribute("height", "21");
+                svgElement.innerHTML = `
+                    <line x1="10" y1="0" x2="10" y2="20" class="debug-crosshair"/>
+                    <line x1="0" y1="10" x2="20" y2="10" class="debug-crosshair"/>
+                    <circle cx="10" cy="10" r="2" fill="red"/>
+                `;
+                
+                const crosshairIcon = L.divIcon({
+                    html: svgElement.outerHTML,
+                    className: 'crosshair-marker',
+                    iconSize: [21, 21],
+                    iconAnchor: [10, 10]
+                });
+                
+                const crosshair = L.marker([lat, lon], {icon: crosshairIcon}).addTo(map);
+                crosshair.bindPopup(`Hassas Konum İşaretçisi<br>
+                                   Lat: ${lat.toFixed(8)}<br>
+                                   Lon: ${lon.toFixed(8)}<br>
+                                   <small>Araç bu tam noktada olmalı</small>`);
+                
+                debugMarkers.push(crosshair);
+                debugLog(`Artı işareti eklendi: (${lat.toFixed(6)}, ${lon.toFixed(6)})`);
+            } else {
+                debugLog('Henüz araç konumu alınmadı');
+            }
+        }
+        
+        // Debug markerlarını temizle
+        function clearDebugMarkers() {
+            debugMarkers.forEach(marker => map.removeLayer(marker));
+            debugMarkers = [];
+            debugLog('Debug markerları temizlendi');
+        }
+        
+        // QWebChannel bağlantısı
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.py_bridge = channel.objects.py_bridge;
+            debugLog('QWebChannel bağlantısı kuruldu');
+            
+            document.getElementById('connection-status').textContent = '🟢 Bağlantı: Aktif';
+            
+            // Araç pozisyonu güncellemesi - GELİŞTİRİLMİŞ
+            py_bridge.updateVehiclePosition.connect(function(lat, lng, heading) {
+                debugLog(`Konum güncellendi: (${lat.toFixed(6)}, ${lng.toFixed(6)}, ${heading}°)`);
+                
+                // Koordinat precision kontrolü
+                const precision = validateCoordinatePrecision(lat, lng);
+                document.getElementById('coordinate-accuracy').textContent = 
+                    `Accuracy: ${precision.accuracy}m ${precision.sufficient ? '✅' : '❌'}`;
+                
+                // Araç markeri güncelle/oluştur
+                if (!vehicleMarker) {
+                    vehicleMarker = L.marker([lat, lng], {
+                        icon: createVehicleIcon(heading),
+                        title: `İDA Konumu: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                    }).addTo(map);
+                    
+                    vehicleMarker.bindPopup(`
+                        <strong>İDA Deniz Aracı</strong><br>
+                        Konum: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                        Heading: ${heading}°<br>
+                        <small>Son güncelleme: ${new Date().toLocaleTimeString()}</small>
+                    `);
+                    
+                    debugLog('Araç markeri oluşturuldu');
+                } else {
+                    // Konum güncelle
+                    vehicleMarker.setLatLng([lat, lng]);
+                    
+                    // İkonu yeniden oluştur (heading ile)
+                    vehicleMarker.setIcon(createVehicleIcon(heading));
+                    
+                    // Popup içeriğini güncelle
+                    vehicleMarker.setPopupContent(`
+                        <strong>İDA Deniz Aracı</strong><br>
+                        Konum: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                        Heading: ${heading}°<br>
+                        <small>Son güncelleme: ${new Date().toLocaleTimeString()}</small>
+                    `);
+                }
+                
+                // Son konum bilgisini sakla
+                lastKnownPosition = {lat, lng, heading};
+                
+                // Debug bilgilerini güncelle
+                document.getElementById('vehicle-coords').textContent = 
+                    `Lat: ${lat.toFixed(8)}, Lng: ${lng.toFixed(8)}`;
+                document.getElementById('vehicle-heading').textContent = 
+                    `Heading: ${heading}° (${getCardinalDirection(heading)})`;
+                
+                // Otomatik takip
+                if (firstConnection || autoFollow) {
+                    map.panTo([lat, lng]);
+                    if (firstConnection) {
+                        map.setView([lat, lng], 15);
+                        firstConnection = false;
+                        debugLog('İlk bağlantı - harita araç konumuna odaklandı');
+                    }
+                }
+                
+                updateMapStatus();
+            });
+            
+            // Waypoint ekleme
+            py_bridge.addWaypoint.connect(function(lat, lng) {
+                addWaypointMarker(lat, lng);
+                debugLog(`Waypoint eklendi: (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
+            });
+            
+            // Harita temizleme
+            py_bridge.clearMap.connect(function() {
+                clearAll();
+                debugLog('Harita temizlendi');
+            });
+        });
+        
+        // Yön açısını pusulaya çevir
+        function getCardinalDirection(heading) {
+            const directions = ['K', 'KKD', 'KD', 'DKD', 'D', 'DGD', 'GD', 'GGD', 'G', 'GGB', 'GB', 'BGB', 'B', 'BKB', 'KB', 'KKB'];
+            const index = Math.round(heading / 22.5) % 16;
+            return directions[index];
+        }
+        
+        // Waypoint markeri ekleme - geliştirilmiş
+        function addWaypointMarker(lat, lng) {
+            const waypointNum = waypoints.length + 1;
+            const colorClass = `waypoint-${((waypointNum - 1) % 6) + 1}`;
+            
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: `<div class="${colorClass}" style="font-size: 20px;">📍</div>`,
+                    className: 'waypoint-marker',
+                    iconSize: [25, 25],
+                    iconAnchor: [12, 25],
+                    popupAnchor: [0, -25]
+                }),
+                title: `Waypoint ${waypointNum}`,
+                draggable: false
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <strong>Waypoint ${waypointNum}</strong><br>
+                Konum: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                <small>Çift tıklayarak silin</small>
+            `);
+            
+            // Waypoint'e çift tıklandığında sil
+            marker.on('dblclick', function(e) {
+                removeWaypoint(marker);
+                e.originalEvent.stopPropagation();
+            });
+            
+            waypoints.push(marker);
+            updateMissionPath();
+            updateWaypointList();
+        }
+        
+        // Waypoint silme
+        function removeWaypoint(markerToRemove) {
+            const index = waypoints.indexOf(markerToRemove);
+            if (index > -1) {
+                map.removeLayer(markerToRemove);
+                waypoints.splice(index, 1);
+                updateMissionPath();
+                updateWaypointList();
+                
+                if (window.py_bridge) {
+                    window.py_bridge.remove_waypoint_from_ui(index);
+                }
+                
+                // Waypoint numaralarını yeniden düzenle
+                waypoints.forEach(function(wp, i) {
+                    const newNum = i + 1;
+                    const colorClass = `waypoint-${((newNum - 1) % 6) + 1}`;
+                    wp.setIcon(L.divIcon({
+                        html: `<div class="${colorClass}" style="font-size: 20px;">📍</div>`,
+                        className: 'waypoint-marker',
+                        iconSize: [25, 25],
+                        iconAnchor: [12, 25],
+                        popupAnchor: [0, -25]
+                    }));
+                    wp.setPopupContent(`
+                        <strong>Waypoint ${newNum}</strong><br>
+                        Konum: ${wp.getLatLng().lat.toFixed(6)}, ${wp.getLatLng().lng.toFixed(6)}<br>
+                        <small>Çift tıklayarak silin</small>
+                    `);
+                    wp.options.title = `Waypoint ${newNum}`;
+                });
+                
+                debugLog(`Waypoint silindi, kalan: ${waypoints.length}`);
+            }
+        }
+        
+        // Mission path güncelleme
+        function updateMissionPath() {
+            if (missionPath) {
+                map.removeLayer(missionPath);
+            }
+            const latlngs = waypoints.map(wp => wp.getLatLng());
+            if (latlngs.length > 1) {
+                missionPath = L.polyline(latlngs, {
+                    color: '#3498db',
+                    weight: 3,
+                    opacity: 0.8,
+                    dashArray: '10, 5'
+                }).addTo(map);
+                
+                // Yön oklarını ekle
+                missionPath.setText('  ►  ', {repeat: true, attributes: {fill: '#3498db', 'font-size': 12}});
+            }
+        }
+        
+        // Tümünü temizle
+        function clearAll() {
+            if (missionPath) {
+                map.removeLayer(missionPath);
+                missionPath = null;
+            }
+            waypoints.forEach(wp => map.removeLayer(wp));
+            waypoints = [];
+            updateWaypointList();
+            clearDebugMarkers();
+        }
+        
+        // Harita event'leri
+        map.on('dblclick', function(e) {
+            if (window.py_bridge) {
+                window.py_bridge.add_waypoint_to_ui(e.latlng.lat, e.latlng.lng);
+            }
+        });
+        
+        map.on('dragstart', function(e) {
+            autoFollow = false;
+            debugLog('Manuel hareket - otomatik takip kapatıldı');
+        });
+        
+        map.on('zoomstart', function(e) {
+            autoFollow = false;
+        });
+        
+        map.on('moveend zoomend', function(e) {
+            updateMapStatus();
+        });
+        
+        // Sağ tık menüsü
+        map.on('contextmenu', function(e) {
+            const menu = document.createElement('div');
+            menu.style.cssText = `
+                position: fixed;
+                left: ${e.originalEvent.clientX}px;
+                top: ${e.originalEvent.clientY}px;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 8px;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                font-size: 14px;
+                cursor: pointer;
+            `;
+            
+            if (vehicleMarker && autoFollow) {
+                menu.innerHTML = '🔓 Serbest Kamera';
+                menu.onclick = function() {
+                    autoFollow = false;
+                    debugLog('Kamera kilidi kaldırıldı');
+                    document.body.removeChild(menu);
+                };
+            } else if (vehicleMarker) {
+                menu.innerHTML = '🔒 Aracı Takip Et';
+                menu.onclick = function() {
+                    autoFollow = true;
+                    map.panTo(vehicleMarker.getLatLng());
+                    debugLog('Otomatik takip açıldı');
+                    document.body.removeChild(menu);
+                };
+            } else {
+                menu.innerHTML = '📍 Araç bağlantısı yok';
+                menu.onclick = function() {
+                    document.body.removeChild(menu);
+                };
+            }
+            
+            document.body.appendChild(menu);
+            
+            setTimeout(function() {
+                document.addEventListener('click', function closeMenu() {
+                    if (document.body.contains(menu)) {
+                        document.body.removeChild(menu);
+                    }
+                    document.removeEventListener('click', closeMenu);
+                }, 100);
+            }, 100);
+        });
+        
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMapStatus();
+            debugLog('Harita sistemi başlatıldı');
+        });
+    </script>
+</body>
+</html> 

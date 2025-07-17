@@ -2,10 +2,11 @@ import sys
 import os
 import time
 import threading
+import math
 from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSignal, QObject, pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLabel,
                              QTextEdit, QHBoxLayout, QMessageBox, QGridLayout,
-                             QProgressBar, QGroupBox, QComboBox, QDoubleSpinBox, QDialog, QFormLayout, QFrame)
+                             QProgressBar, QGroupBox, QComboBox, QDoubleSpinBox, QDialog, QFormLayout, QFrame, QScrollArea, QLineEdit)
 from PyQt5.QtGui import QPixmap, QIcon, QTransform, QTextCursor, QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWebChannel import QWebChannel
@@ -46,6 +47,9 @@ class GCSApp(QWidget):
         self.is_connected = False
         self.waypoints = []
         self.current_heading = 0
+        
+        # SERVO_OUTPUT_RAW cache - DroneKit channels güncellenmiyor
+        self.servo_output_cache = {}
         self.initUI()
         self.log_message_received.connect(self.update_log_safe)
         self.connection_status_changed.connect(self.on_connection_status_changed)
@@ -59,12 +63,21 @@ class GCSApp(QWidget):
         main_layout = QHBoxLayout()
         self.setLayout(main_layout)
 
-        # Sol taraf (Sidebar)
-        sidebar_layout = QVBoxLayout()
-        sidebar_frame = QFrame()
-        sidebar_frame.setFrameShape(QFrame.StyledPanel)
-        sidebar_frame.setLayout(sidebar_layout)
-        sidebar_frame.setMaximumWidth(400)
+        # Sol taraf (Sidebar) - Kaydırmalı (sadece dikey)
+        sidebar_scroll = QScrollArea()
+        sidebar_widget = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar_widget)
+        
+        sidebar_scroll.setWidget(sidebar_widget)
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setMaximumWidth(400)
+        sidebar_scroll.setMinimumWidth(400)  # Sabit genişlik
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        
+        # Widget'in genişliğini sabitle
+        sidebar_widget.setMaximumWidth(380)  # Scroll bar için biraz yer bırak
+        sidebar_widget.setMinimumWidth(380)
 
         # Sağ taraf (Harita)
         map_layout = QVBoxLayout()
@@ -138,8 +151,10 @@ class GCSApp(QWidget):
         telemetry_layout.addWidget(telemetry_title, 0, 0, 1, 4)
 
         self.telemetry_values = {
-            "Hız:": QLabel("N/A"), "Yükseklik:": QLabel("N/A"),
-            "Heading:": QLabel("N/A"), "GPS Fix:": QLabel("N/A"),
+            "Hız:": QLabel("N/A"), "Hız Setpoint:": QLabel("N/A"),
+            "Yükseklik:": QLabel("N/A"), "Heading:": QLabel("N/A"), 
+            "Heading Setpoint:": QLabel("N/A"), "Pitch:": QLabel("N/A"),
+            "Yaw:": QLabel("N/A"), "GPS Fix:": QLabel("N/A"),
             "Mod:": QLabel("N/A"), "Batarya:": QLabel("N/A")
         }
         
@@ -152,6 +167,21 @@ class GCSApp(QWidget):
         self.battery_progress = QProgressBar()
         telemetry_layout.addWidget(QLabel("Batarya Seviyesi:"), row, 0)
         telemetry_layout.addWidget(self.battery_progress, row, 1)
+        
+        # Thruster durumu için basit gösterim (Deniz aracı - 2 motor)
+        row += 1
+        thruster_layout = QVBoxLayout()  # Dikey layout - daha iyi görünüm
+        self.thruster_labels = []
+        for i in range(2):  # Deniz aracı için 2 thruster
+            thruster_label = QLabel(f"T{i+1}: 0%")
+            thruster_label.setStyleSheet("border: 1px solid gray; padding: 5px; font-size: 10px; font-weight: bold;")
+            thruster_label.setMinimumHeight(25)  # Yükseklik arttır
+            thruster_label.setWordWrap(False)  # Text wrapping kapalı
+            thruster_layout.addWidget(thruster_label)
+            self.thruster_labels.append(thruster_label)
+        
+        telemetry_layout.addWidget(QLabel("Thruster'lar:"), row, 0)
+        telemetry_layout.addLayout(thruster_layout, row, 1, 1, 2)
 
         # Attitude Indicator (Gyro) ekle
         self.attitude_indicator = AttitudeIndicator()
@@ -223,7 +253,7 @@ class GCSApp(QWidget):
             btn.setEnabled(False)
 
         # ... (main_layout'a widget'ların eklenmesi)
-        main_layout.addWidget(sidebar_frame)
+        main_layout.addWidget(sidebar_scroll)
         main_layout.addWidget(self.web_view, 1) # Haritayı daha geniş yap
 
         # Timer'lar
@@ -231,6 +261,9 @@ class GCSApp(QWidget):
         self.telemetry_timer.timeout.connect(self.update_telemetry)
         self.attitude_timer = QTimer(self)
         self.attitude_timer.timeout.connect(self.update_attitude)
+        self.motor_timer = QTimer(self)
+        self.motor_timer.timeout.connect(self.update_motor_simulation)
+        self.motor_timer.start(1000)  # Motor simülasyonu 1s'de bir - daha az CPU kullanımı
 
         self.refresh_ports()
     
@@ -309,8 +342,14 @@ class GCSApp(QWidget):
         if connected:
             self.connect_button.setText("BAĞLANTIYI KES")
             self.connect_button.setStyleSheet("background-color: red; color: white; font-weight: bold;")
-            self.telemetry_timer.start(1000)
-            self.attitude_timer.start(100) # Attitude indicator'ı daha sık güncelle
+            self.telemetry_timer.start(500)  # 500ms = 2Hz - daha hızlı güncelleme
+            self.attitude_timer.start(50)   # 50ms = 20Hz - daha smooth attitude
+            
+            # SERVO_OUTPUT_RAW mesajını request et
+            self.request_servo_output()
+            
+            # Bağlandıktan hemen sonra bir kez telemetri güncelle
+            QTimer.singleShot(100, self.update_telemetry)  # 100ms sonra
             for btn in self.mode_buttons:
                 btn.setEnabled(True)
         else:
@@ -321,6 +360,207 @@ class GCSApp(QWidget):
             for btn in self.mode_buttons:
                 btn.setEnabled(False)
             self.vehicle = None
+            
+            # Cache'i temizle
+            self.servo_output_cache.clear()
+
+    def request_servo_output(self):
+        """ArduPilot'tan SERVO_OUTPUT_RAW mesajını request et"""
+        if self.vehicle:
+            try:
+                # SERVO_OUTPUT_RAW mesajını aktif et
+                msg = self.vehicle.message_factory.request_data_stream_encode(
+                    self.vehicle._master.target_system,
+                    self.vehicle._master.target_component,
+                    2,  # MAV_DATA_STREAM_EXTENDED_STATUS
+                    2,  # 2 Hz rate
+                    1   # start_stop (1=start)
+                )
+                self.vehicle.send_mavlink(msg)
+                self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
+                
+                # Servo function'ları da alalım
+                QTimer.singleShot(2000, self.log_servo_functions)  # 2 saniye sonra
+                
+            except Exception as e:
+                self.log_message_received.emit(f"SERVO_OUTPUT request hatası: {e}")
+
+    def log_servo_functions(self):
+        """Servo function parametrelerini logla"""
+        if self.vehicle and hasattr(self.vehicle, 'parameters'):
+            try:
+                # Vehicle tipi ve versiyonu
+                vehicle_type = getattr(self.vehicle, '_vehicle_type', 'UNKNOWN')
+                version = getattr(self.vehicle, 'version', 'UNKNOWN')
+                
+                self.log_message_received.emit(f"Vehicle: {vehicle_type}, Version: {version}")
+                
+                # Servo function'ları
+                servo1_func = self.vehicle.parameters.get('SERVO1_FUNCTION', None)
+                servo2_func = self.vehicle.parameters.get('SERVO2_FUNCTION', None)
+                servo3_func = self.vehicle.parameters.get('SERVO3_FUNCTION', None)
+                servo4_func = self.vehicle.parameters.get('SERVO4_FUNCTION', None)
+                
+                # Frame class ve type
+                frame_class = self.vehicle.parameters.get('FRAME_CLASS', None)
+                frame_type = self.vehicle.parameters.get('FRAME_TYPE', None)
+                
+                self.log_message_received.emit(f"Frame: CLASS={frame_class}, TYPE={frame_type}")
+                self.log_message_received.emit(f"Servo Functions: S1={servo1_func}, S2={servo2_func}, S3={servo3_func}, S4={servo4_func}")
+                
+                # Motor çıkış kanalları kontrol et
+                self.debug_all_servo_channels()
+                
+            except Exception as e:
+                self.log_message_received.emit(f"Vehicle info okuma hatası: {e}")
+
+    def debug_all_servo_channels(self):
+        """Tüm servo kanallarını debug et"""
+        if self.vehicle:
+            try:
+                # DroneKit channels attribute'u kontrol et
+                self.log_message_received.emit("=== CHANNELS DEBUG ===")
+                
+                if hasattr(self.vehicle, 'channels'):
+                    if self.vehicle.channels is not None:
+                        self.log_message_received.emit(f"✓ vehicle.channels type: {type(self.vehicle.channels)}")
+                        
+                        # Channels içindeki attribute'ları kontrol et
+                        channels_attrs = dir(self.vehicle.channels)
+                        self.log_message_received.emit(f"Channels attributes: {[attr for attr in channels_attrs if not attr.startswith('_')]}")
+                        
+                        # Eğer channels bir dict-like object ise, içeriğini göster
+                        try:
+                            channels_dict = dict(self.vehicle.channels)
+                            self.log_message_received.emit(f"Channels dict: {channels_dict}")
+                        except:
+                            self.log_message_received.emit("Channels dict'e çevrilemedi")
+                        
+                        # Override durumu
+                        if hasattr(self.vehicle.channels, 'overrides'):
+                            self.log_message_received.emit(f"Overrides mevcut: {self.vehicle.channels.overrides}")
+                        else:
+                            self.log_message_received.emit("Overrides attribute yok")
+                            
+                    else:
+                        self.log_message_received.emit("✗ vehicle.channels = None")
+                else:
+                    self.log_message_received.emit("✗ vehicle.channels attribute yok")
+                
+                # Servo output raw message listener ekle - CACHE'E KAYDET
+                def servo_output_listener(vehicle, name, message):
+                    # Servo değerlerini parse et
+                    servo_values = [
+                        message.servo1_raw, message.servo2_raw, message.servo3_raw, message.servo4_raw,
+                        message.servo5_raw, message.servo6_raw, message.servo7_raw, message.servo8_raw
+                    ]
+                    active_servos = [(i+1, val) for i, val in enumerate(servo_values) if val != 0]
+                    self.log_message_received.emit(f"✓ SERVO_OUTPUT_RAW alındı! Aktif: {active_servos}")
+                    
+                    # Cache'e kaydet - DroneKit channels güncellenmiyor
+                    for i, val in enumerate(servo_values):
+                        if val != 0:  # Sadece aktif kanalları kaydet
+                            self.servo_output_cache[str(i+1)] = val
+                                
+                self.vehicle.on_message('SERVO_OUTPUT_RAW')(servo_output_listener)
+                self.log_message_received.emit("✓ SERVO_OUTPUT_RAW listener eklendi")
+                
+                # Periyodik channel durumu kontrol et
+                QTimer.singleShot(5000, self.periodic_channel_check)  # 5 saniye sonra
+                
+            except Exception as e:
+                self.log_message_received.emit(f"Servo debug hatası: {e}")
+                import traceback
+                self.log_message_received.emit(f"Stack trace: {traceback.format_exc()}")
+
+    def periodic_channel_check(self):
+        """Periyodik olarak channel durumunu kontrol et"""
+        if self.vehicle:
+            try:
+                # Cache durumunu kontrol et
+                ch1 = self.servo_output_cache.get('1', 'YOK')
+                ch2 = self.servo_output_cache.get('2', 'YOK') 
+                ch3 = self.servo_output_cache.get('3', 'YOK')
+                ch4 = self.servo_output_cache.get('4', 'YOK')
+                
+                cache_count = len([x for x in [ch1, ch2, ch3, ch4] if x != 'YOK'])
+                self.log_message_received.emit(f"Cache check: CH1={ch1}, CH2={ch2}, CH3={ch3}, CH4={ch4} (Aktif: {cache_count})")
+                    
+                # 10 saniye sonra tekrar kontrol et
+                QTimer.singleShot(10000, self.periodic_channel_check)
+                
+            except Exception as e:
+                self.log_message_received.emit(f"Periyodik check hatası: {e}")
+
+    def change_mode(self, mode_name):
+        """Vehicle modunu değiştir"""
+        if self.vehicle:
+            try:
+                self.vehicle.mode = VehicleMode(mode_name)
+                self.log_message_received.emit(f"Mod değiştirildi: {mode_name}")
+            except Exception as e:
+                self.log_message_received.emit(f"Mod değiştirme hatası: {e}")
+
+    def test_thruster(self, side):
+        """Manuel thruster test - PWM komutları gönder"""
+        if not self.vehicle:
+            self.log_message_received.emit("Thruster test: Vehicle bağlı değil")
+            return
+            
+        try:
+            # Önce channels.overrides'ı initialize et
+            if not hasattr(self.vehicle.channels, 'overrides'):
+                self.log_message_received.emit("channels.overrides initialize ediliyor...")
+                self.vehicle.channels.overrides = {}
+            
+            # Mevcut override durumunu logla
+            current_overrides = getattr(self.vehicle.channels, 'overrides', {})
+            self.log_message_received.emit(f"Mevcut overrides: {current_overrides}")
+            
+            if side == 'left':
+                # Sol thruster test: Kanal 2'ye 1600μs (60% güç)
+                self.vehicle.channels.overrides['2'] = 1600
+                self.log_message_received.emit("Sol thruster test: CH2=1600μs GÖNDER")
+                
+                # Doğrulama
+                if '2' in self.vehicle.channels.overrides:
+                    self.log_message_received.emit(f"Sol override doğrulandı: CH2={self.vehicle.channels.overrides['2']}")
+                else:
+                    self.log_message_received.emit("SOL OVERRIDE BAŞARISIZ!")
+                    
+            elif side == 'right':
+                # Sağ thruster test: Kanal 1'e 1600μs (60% güç)  
+                self.vehicle.channels.overrides['1'] = 1600
+                self.log_message_received.emit("Sağ thruster test: CH1=1600μs GÖNDER")
+                
+                # Doğrulama
+                if '1' in self.vehicle.channels.overrides:
+                    self.log_message_received.emit(f"Sağ override doğrulandı: CH1={self.vehicle.channels.overrides['1']}")
+                else:
+                    self.log_message_received.emit("SAĞ OVERRIDE BAŞARISIZ!")
+            
+            # Override sonrası durumu logla
+            final_overrides = getattr(self.vehicle.channels, 'overrides', {})
+            self.log_message_received.emit(f"Test sonrası overrides: {final_overrides}")
+                
+        except Exception as e:
+            self.log_message_received.emit(f"Thruster test hatası: {e}")
+            import traceback
+            self.log_message_received.emit(f"Stack trace: {traceback.format_exc()}")
+
+    def stop_thrusters(self):
+        """Tüm thruster'ları durdur"""
+        if not self.vehicle:
+            return
+            
+        try:
+            # Her iki kanala da nötr PWM gönder
+            self.vehicle.channels.overrides['1'] = 1500  # Sağ thruster nötr
+            self.vehicle.channels.overrides['2'] = 1500  # Sol thruster nötr
+            self.log_message_received.emit("Thruster'lar durduruldu: CH1=CH2=1500μs")
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Thruster durdurma hatası: {e}")
 
     def disconnect_from_vehicle(self):
         if self.vehicle:
@@ -339,14 +579,73 @@ class GCSApp(QWidget):
             return
 
         try:
-            speed = self.vehicle.groundspeed
-            alt = self.vehicle.location.global_relative_frame.alt
-            heading = self.vehicle.heading
-            mode = self.vehicle.mode.name
+            # GERÇEK ARDUPİLOT VERİLERİ - sadece mevcut olanları al
+            speed = getattr(self.vehicle, 'groundspeed', None)
+            heading = getattr(self.vehicle, 'heading', None)  
+            mode = getattr(self.vehicle.mode, 'name', None) if hasattr(self.vehicle, 'mode') else None
             
-            self.telemetry_values["Hız:"].setText(f"{speed:.1f} m/s")
+            # Location güvenli alım
+            alt = None
+            if hasattr(self.vehicle, 'location') and self.vehicle.location:
+                if hasattr(self.vehicle.location, 'global_relative_frame'):
+                    alt = getattr(self.vehicle.location.global_relative_frame, 'alt', None)
+            
+            # Armed durumu
+            armed = getattr(self.vehicle, 'armed', None)
+            
+            # Veri eksikse: gösterme 
+            if speed is None:
+                self.telemetry_values["Hız:"].setText("Veri yok")
+            else:
+                self.telemetry_values["Hız:"].setText(f"{speed:.1f} m/s")
+                
+            if heading is None:
+                self.telemetry_values["Heading:"].setText("Veri yok")
+            else:
+                self.telemetry_values["Heading:"].setText(f"{heading}°")
+                
+            if alt is None:
+                self.telemetry_values["Yükseklik:"].setText("Veri yok") 
+            else:
+                self.telemetry_values["Yükseklik:"].setText(f"{alt:.1f} m")
+                
+            if mode is None:
+                self.telemetry_values["Mod:"].setText("UNKNOWN")
+            else:
+                self.telemetry_values["Mod:"].setText(mode)
+            
+            # GERÇEK SETPOINT VERİLERİ - ArduPilot'tan al
+            if mode in ["AUTO", "GUIDED", "RTL"]:
+                # Heading Setpoint: Aktif waypoint varsa bearing hesapla
+                if len(self.waypoints) > 0 and heading is not None:
+                    target_heading = self.get_target_heading_from_mission(heading)
+                    self.telemetry_values["Heading Setpoint:"].setText(f"{target_heading:.0f}°")
+                else:
+                    self.telemetry_values["Heading Setpoint:"].setText("Veri yok")
+
+                # Hız Setpoint: WPNAV_SPEED veya WP_SPEED parametresinden al (cm/s → m/s)
+                wpnav_speed = self.vehicle.parameters.get('WPNAV_SPEED', None)
+                wp_speed = self.vehicle.parameters.get('WP_SPEED', None)
+                speed_param = wpnav_speed if wpnav_speed is not None else wp_speed
+                if speed_param is not None:
+                    speed_ms = speed_param / 100.0  # cm/s → m/s
+                    self.telemetry_values["Hız Setpoint:"].setText(f"{speed_ms:.2f} m/s")
+                else:
+                    self.telemetry_values["Hız Setpoint:"].setText("Veri yok")
+            else:  # MANUAL, STABILIZE, etc.
+                # Manuel modda: setpoint YOK
+                self.telemetry_values["Hız Setpoint:"].setText("MANUAL")
+                self.telemetry_values["Heading Setpoint:"].setText("MANUAL")
+            
             self.telemetry_values["Yükseklik:"].setText(f"{alt:.1f} m")
             self.telemetry_values["Heading:"].setText(f"{heading}°")
+            
+            # Attitude - basit
+            pitch_deg = math.degrees(self.vehicle.attitude.pitch)
+            yaw_deg = math.degrees(self.vehicle.attitude.yaw)
+            self.telemetry_values["Pitch:"].setText(f"{pitch_deg:.1f}°")
+            self.telemetry_values["Yaw:"].setText(f"{yaw_deg:.1f}°")
+            
             self.telemetry_values["Mod:"].setText(mode)
 
             if self.vehicle.battery and self.vehicle.battery.level is not None:
@@ -357,15 +656,151 @@ class GCSApp(QWidget):
             if self.vehicle.gps_0:
                 fix_str = f"{self.vehicle.gps_0.fix_type}D Fix ({self.vehicle.gps_0.satellites_visible} uydu)"
                 self.telemetry_values["GPS Fix:"].setText(fix_str)
+            
+            # Rota label'ını güncelle
+            if heading is not None and hasattr(self, 'current_heading_label'):
+                if mode == "MANUAL":
+                    self.current_heading_label.setText("Mevcut Rota: MANUAL")
+                else:
+                    self.current_heading_label.setText(f"Mevcut Rota: {heading}°")
+            
+
+        
         except Exception as e:
             self.log_message_received.emit(f"Telemetri okuma hatası: {e}")
 
+    def update_motor_simulation(self):
+        """Thruster güçleri - gerçek bağlantıda Pixhawk'tan PWM değerleri alınır"""
+        if not hasattr(self, 'thruster_labels'):
+            return
+        
+        if self.is_connected and self.vehicle:
+            # GERÇEK VERİ: Pixhawk'tan servo çıkışları (PWM 1000-2000)
+            # self.vehicle.channels['1'] = Sol thruster PWM
+            # SERVO_OUTPUT_RAW cache'den PWM değerlerini al
+            try:
+                # Cache'den PWM değerlerini al
+                # SERVO1_FUNCTION=74 (Motor2/Sağ), SERVO2_FUNCTION=73 (Motor1/Sol)
+                right_pwm = self.servo_output_cache.get('1')  # Kanal 1: Sağ thruster (SERVO_FUNCTION=74)
+                left_pwm = self.servo_output_cache.get('2')   # Kanal 2: Sol thruster (SERVO_FUNCTION=73)
+                
+                # None kontrolü yap
+                if left_pwm is not None and right_pwm is not None:
+                    # Debug: Tüm PWM kanallarını kontrol et
+                    all_channels_debug = []
+                    for ch in range(1, 9):  # Kanal 1-8 arası kontrol et
+                        pwm_val = self.servo_output_cache.get(str(ch))
+                        if pwm_val is not None:
+                            all_channels_debug.append(f"CH{ch}:{pwm_val}")
+                    
+                    debug_msg = f"Cache PWM: {', '.join(all_channels_debug)} | SERVO1_FUNC=74(Sağ), SERVO2_FUNC=73(Sol)"
+                    self.log_message_received.emit(debug_msg)
+                    
+                    # Marine thruster PWM: 1500=neutral, 1000=tam geri, 2000=tam ileri
+                    def calculate_thruster_power(pwm):
+                        if pwm is None:
+                            return 0, "NEUTRAL"
+                        # Neutral noktası 1500μs, ±25μs tolerans
+                        diff = pwm - 1500
+                        power = abs(diff) / 5.0  # Her 5μs = %1 güç
+                        power = max(0, min(100, power))
+                        
+                        # Geniş neutral bölgesi: 1475-1525μs arası NEUTRAL
+                        if abs(diff) <= 25:
+                            direction = "NEUTRAL"
+                            power = 0  # Neutral'da güç 0 göster
+                        elif diff > 25:
+                            direction = "GERİ"
+                        else:
+                            direction = "İLERİ"
+                        return power, direction
+                    
+                    left_power, left_dir = calculate_thruster_power(left_pwm)
+                    right_power, right_dir = calculate_thruster_power(right_pwm)
+                    
+                    # Sol motor ilk (UI sırası), Sağ motor ikinci
+                    motor_data = [(left_power, left_dir, left_pwm, "Sol", "CH2(73)"),
+                                  (right_power, right_dir, right_pwm, "Sağ", "CH1(74)")]
+                    
+                    for i, (power, direction, pwm_val, side, channel_info) in enumerate(motor_data):
+                        # Renk: güç ve yöne göre
+                        if direction == "NEUTRAL":
+                            color = "gray"
+                        elif power < 30:
+                            color = "green"
+                        elif power < 70:
+                            color = "orange"
+                        else:
+                            color = "red"
+                            
+                        real_pwm = pwm_val if pwm_val else 0
+                        # Kısa format: "Sol: 80% GERİ (1100μs)"
+                        self.thruster_labels[i].setText(f"{side}: {power:.0f}% {direction} ({real_pwm}μs)")
+                        self.thruster_labels[i].setStyleSheet(f"border: 1px solid {color}; padding: 5px; font-size: 10px; font-weight: bold; color: {color};")
+                    return
+                else:
+                    # PWM değerleri henüz cache'de yok - basit fallback göster
+                    for i in range(2):
+                        side = "Sol" if i == 0 else "Sağ"
+                        self.thruster_labels[i].setText(f"{side}: VERİ BEKLENİYOR")
+                        self.thruster_labels[i].setStyleSheet("border: 1px solid orange; padding: 5px; font-size: 10px; font-weight: bold; color: orange;")
+                    return
+            except Exception as e:
+                self.log_message_received.emit(f"Thruster cache okunamadı: {e}")
+                # Hata durumunda da fallback göster
+                for i in range(2):
+                    side = "Sol" if i == 0 else "Sağ"
+                    self.thruster_labels[i].setText(f"{side}: HATA")
+                    self.thruster_labels[i].setStyleSheet("border: 1px solid red; padding: 5px; font-size: 10px; font-weight: bold; color: red;")
+                return
+        
+        # SADECE GERÇEK VERİ - SİMÜLASYON YOK
+        if not self.is_connected or not self.vehicle:
+            # Bağlantı yoksa: hiçbir şey gösterme
+            for i in range(2):
+                side = "Sol" if i == 0 else "Sağ"
+                self.thruster_labels[i].setText(f"{side}: BAĞLANTI YOK")
+                self.thruster_labels[i].setStyleSheet("border: 1px solid gray; padding: 5px; font-size: 10px; font-weight: bold; color: gray;")
+            return
+            
+        # Cache boşsa: bekle  
+        if not self.servo_output_cache or '1' not in self.servo_output_cache or '2' not in self.servo_output_cache:
+            for i in range(2):
+                side = "Sol" if i == 0 else "Sağ"
+                self.thruster_labels[i].setText(f"{side}: VERİ BEKLENİYOR")
+                self.thruster_labels[i].setStyleSheet("border: 1px solid orange; padding: 5px; font-size: 10px; font-weight: bold; color: orange;")
+            return
+
     def location_callback(self, vehicle, attr_name, value):
         if value and self.vehicle.heading is not None:
+            # Koordinat doğruluğu için debug log (sadece 10 saniyede bir)
+            import time
+            current_time = time.time()
+            if not hasattr(self, '_last_coord_log') or current_time - self._last_coord_log > 10:
+                self._last_coord_log = current_time
+                precision_info = f"Koordinat: {value.lat:.6f}, {value.lon:.6f}, Heading: {self.vehicle.heading}°"
+                self.log_message_received.emit(f"📍 {precision_info}")
+            
             self.bridge.updateVehiclePosition.emit(value.lat, value.lon, self.vehicle.heading)
 
     def heading_callback(self, vehicle, attr_name, value):
         self.current_heading = value
+    
+    def get_target_heading_from_mission(self, current_heading):
+        """Mission waypoint'lerinden target heading hesapla"""
+        if len(self.waypoints) > 0 and self.vehicle and hasattr(self.vehicle, 'location'):
+            # Bir sonraki waypoint'e doğru hedef açıyı hesapla
+            current_loc = self.vehicle.location.global_relative_frame
+            next_wp = self.waypoints[0]  # İlk waypoint'i hedef al
+            
+            # Basit bearing hesaplama
+            dlat = next_wp["lat"] - current_loc.lat
+            dlon = next_wp["lng"] - current_loc.lon
+            target_heading = math.degrees(math.atan2(dlon, dlat)) % 360
+            return target_heading
+        else:
+            # Waypoint yoksa hafif sapma simüle et
+            return (current_heading + 15) % 360
 
     def update_attitude(self):
         """Attitude indicator'ı günceller."""
@@ -533,6 +968,83 @@ class GCSApp(QWidget):
         else:
             self.ip_input.setVisible(False)
             self.udp_port_input.setVisible(False)
+
+    # Rota Kontrol Fonksiyonları
+    def read_current_heading(self):
+        """Aracın mevcut rotasını okur"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Rota okumak için araç bağlantısı gerekli")
+            return
+        
+        try:
+            current_heading = getattr(self.vehicle, 'heading', None)
+            if current_heading is not None:
+                self.current_heading_label.setText(f"Mevcut Rota: {current_heading}°")
+                self.target_heading_input.setText(str(int(current_heading)))
+                self.log_message_received.emit(f"Mevcut rota okundu: {current_heading}°")
+            else:
+                self.log_message_received.emit("Rota bilgisi henüz mevcut değil")
+        except Exception as e:
+            self.log_message_received.emit(f"Rota okuma hatası: {e}")
+
+    def send_heading_command(self):
+        """Girilen hedef rotayı araca gönderir"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Rota göndermek için araç bağlantısı gerekli")
+            return
+        
+        try:
+            target_heading_text = self.target_heading_input.text().strip()
+            if not target_heading_text:
+                self.log_message_received.emit("Hedef rota değeri giriniz (0-359°)")
+                return
+            
+            target_heading = float(target_heading_text)
+            if target_heading < 0 or target_heading > 359:
+                self.log_message_received.emit("Rota değeri 0-359° arasında olmalıdır")
+                return
+            
+            # GUIDED modda hedef rota gönder
+            if self.vehicle.mode.name != "GUIDED":
+                self.log_message_received.emit("Rota göndermek için GUIDED moda geçiliyor...")
+                self.vehicle.mode = VehicleMode("GUIDED")
+                time.sleep(2)  # Mod değişimini bekle
+            
+            # Rota komutunu gönder - ArduPilot SUB için
+            msg = self.vehicle.message_factory.set_position_target_global_int_encode(
+                0,  # time_boot_ms
+                self.vehicle._master.target_system,
+                self.vehicle._master.target_component,
+                8,  # coordinate_frame (MAV_FRAME_GLOBAL_RELATIVE_ALT_INT)
+                0b110111111000,  # type_mask (sadece yaw açısını kullan)
+                0, 0, 0,  # lat, lon, alt (kullanılmıyor)
+                0, 0, 0,  # vx, vy, vz (kullanılmıyor) 
+                0, 0, math.radians(target_heading)  # afx, afy, yaw
+            )
+            self.vehicle.send_mavlink(msg)
+            
+            self.log_message_received.emit(f"Hedef rota gönderildi: {target_heading}°")
+            
+        except ValueError:
+            self.log_message_received.emit("Geçersiz rota değeri. Sayı giriniz.")
+        except Exception as e:
+            self.log_message_received.emit(f"Rota gönderme hatası: {e}")
+
+    def clear_heading_command(self):
+        """Rota komutlarını temizler"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Rota temizlemek için araç bağlantısı gerekli")
+            return
+        
+        try:
+            # MANUAL moda geçerek otomatik rota kontrolünü durdur
+            self.vehicle.mode = VehicleMode("MANUAL")
+            self.current_heading_label.setText("Mevcut Rota: MANUAL")
+            self.target_heading_input.clear()
+            self.log_message_received.emit("Rota komutları temizlendi - MANUAL moda geçildi")
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Rota temizleme hatası: {e}")
 
 if __name__ == '__main__':
     # qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9223") # Debug için

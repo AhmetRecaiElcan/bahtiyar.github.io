@@ -1,0 +1,251 @@
+{
+  "scenario_name": "Koordinat Precision Testi",
+  "timestamp": 1752656397.267104,
+  "tests": [
+    {
+      "point_name": "Galata Kulesi (Yüksek Precision)",
+      "coordinates": {
+        "lat": 41.025631,
+        "lon": 28.974298
+      },
+      "heading": 0,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.025631,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.974298,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.025631,
+          28.974298
+        ],
+        "web_mercator": [
+          3225404.099452565,
+          5016122.965890164
+        ],
+        "converted_back": [
+          41.02563099999999,
+          28.974298
+        ],
+        "error_meters": 1.4162309103227244e-09,
+        "passed": true
+      },
+      "test_passed": true
+    },
+    {
+      "point_name": "Eminönü (Yüksek Precision)",
+      "coordinates": {
+        "lat": 41.008238,
+        "lon": 28.978359
+      },
+      "heading": 45,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.008238,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.978359,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.008238,
+          28.978359
+        ],
+        "web_mercator": [
+          3225856.1679046764,
+          5013556.842912996
+        ],
+        "converted_back": [
+          41.008238,
+          28.978358999999998
+        ],
+        "error_meters": 5.343547170533338e-10,
+        "passed": true
+      },
+      "test_passed": true
+    },
+    {
+      "point_name": "Galata Kulesi (Orta Precision)",
+      "coordinates": {
+        "lat": 41.0256,
+        "lon": 28.9743
+      },
+      "heading": 90,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.0256,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.9743,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.0256,
+          28.9743
+        ],
+        "web_mercator": [
+          3225404.3220915464,
+          5016118.391619058
+        ],
+        "converted_back": [
+          41.025600000000004,
+          28.974299999999996
+        ],
+        "error_meters": 7.081154551613622e-10,
+        "passed": true
+      },
+      "test_passed": true
+    },
+    {
+      "point_name": "Eminönü (Orta Precision)",
+      "coordinates": {
+        "lat": 41.0082,
+        "lon": 28.9784
+      },
+      "heading": 135,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.0082,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.9784,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.0082,
+          28.9784
+        ],
+        "web_mercator": [
+          3225860.7320037987,
+          5013551.237222597
+        ],
+        "converted_back": [
+          41.0082,
+          28.978399999999997
+        ],
+        "error_meters": 0.0,
+        "passed": true
+      },
+      "test_passed": true
+    },
+    {
+      "point_name": "Yaklaşık Konum (Düşük Precision)",
+      "coordinates": {
+        "lat": 41.03,
+        "lon": 28.97
+      },
+      "heading": 180,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.03,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.97,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.03,
+          28.97
+        ],
+        "web_mercator": [
+          3224925.648281135,
+          5016767.664541266
+        ],
+        "converted_back": [
+          41.029999999999994,
+          28.969999999999995
+        ],
+        "error_meters": 1.4162309103227244e-09,
+        "passed": true
+      },
+      "test_passed": true
+    },
+    {
+      "point_name": "Yaklaşık Konum 2 (Düşük Precision)",
+      "coordinates": {
+        "lat": 41.01,
+        "lon": 28.98
+      },
+      "heading": 225,
+      "precision_analysis": {
+        "latitude": {
+          "value": 41.01,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "longitude": {
+          "value": 28.98,
+          "decimal_places": 10,
+          "accuracy_meters": 0.001
+        },
+        "overall_accuracy_meters": 0.001,
+        "sufficient_for_marine": true
+      },
+      "coordinate_accuracy": {
+        "point": 1,
+        "original": [
+          41.01,
+          28.98
+        ],
+        "web_mercator": [
+          3226038.843189068,
+          5013816.77347617
+        ],
+        "converted_back": [
+          41.00999999999999,
+          28.979999999999997
+        ],
+        "error_meters": 8.871004399795269e-10,
+        "passed": true
+      },
+      "test_passed": true
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6
+  }
+}

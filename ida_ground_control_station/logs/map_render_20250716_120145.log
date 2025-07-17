@@ -1,0 +1,1 @@
+2025-07-16 12:01:45 | DEBUG    | Harita eventi: marker_update - vehicle @ 41.025631, 28.974298 | Data: {"event_type": "marker_update", "element": "vehicle", "coordinates": {"lat": 41.025631, "lon": 28.974298}, "properties": {}}

@@ -1,0 +1,28 @@
+{
+  "test_coordinates": [
+    {
+      "lat": 41.025631,
+      "lon": 28.974298,
+      "heading": 0,
+      "name": "Galata Kulesi"
+    },
+    {
+      "lat": 41.008238,
+      "lon": 28.978359,
+      "heading": 90,
+      "name": "Eminönü"
+    },
+    {
+      "lat": 41.040556,
+      "lon": 29.0,
+      "heading": 180,
+      "name": "Üsküdar"
+    }
+  ],
+  "expected_results": {
+    "all_points_visible": true,
+    "vessel_icon_aligned": true,
+    "route_line_accurate": true,
+    "coordinate_precision": "< 1.0m"
+  }
+}

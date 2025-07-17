@@ -1,0 +1,1 @@
+2025-07-16 12:01:45 | INFO     | YKİ sistemi başlatıldı (Session: 20250716_120145) | Data: {"session_id": "20250716_120145", "log_directory": "logs", "system_info": {"os": "posix", "python_version": "3.10.4"}}

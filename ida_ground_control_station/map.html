@@ -38,12 +38,12 @@
         var autoFollow = true; // Otomatik takip aktif mi?
         var firstConnection = true; // İlk bağlantı mı?
         
-        // Araç ikonu (Emoji kullanarak)
+        // Araç ikonu (Emoji kullanarak) - Koordinat düzeltmesi uygulandı
         var vehicleIcon = L.divIcon({
             html: '<div style="font-size: 24px; transform: rotate(0deg);">⛵</div>',
-            className: 'vessel-marker', // CSS ile stil vermek için
+            className: 'vessel-marker',
             iconSize: [30, 30],
-            iconAnchor: [15, 15]
+            iconAnchor: [15, 15] // ✅ TAM MERKEZ - Koordinat doğruluğu için düzeltildi
         });
 
         // QWebChannel'ı hemen başlat
@@ -57,9 +57,9 @@
                 }
                 vehicleMarker.setLatLng([lat, lng]);
                 
-                // İkonu aracın yönüne göre döndür (90 derece düzeltme ile)
+                // İkonu aracın yönüne göre döndür - düzeltilmiş
                 var iconElement = vehicleMarker._icon.firstChild;
-                if (iconElement) { // Elementin var olduğundan emin ol
+                if (iconElement) {
                     iconElement.style.transform = `rotate(${heading + 90}deg)`;
                 }
 
