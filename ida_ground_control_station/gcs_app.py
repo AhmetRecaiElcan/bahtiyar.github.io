@@ -106,60 +106,7 @@ class GCSApp(QWidget):
         self.setup_web_channel()
         map_layout.addWidget(self.web_view)
 
-        # Bağlantı Paneli
-        connection_frame = QFrame()
-        connection_frame.setFrameShape(QFrame.StyledPanel)
-        connection_layout = QVBoxLayout(connection_frame)
-        sidebar_layout.addWidget(connection_frame)
-
-        connection_title = QLabel("Bağlantı")
-        connection_title.setFont(QFont('Arial', 14, QFont.Bold))
-        connection_layout.addWidget(connection_title)
-        
-        # Bağlantı tipi seçimi
-        self.connection_type = QComboBox()
-        self.connection_type.addItems(["Serial (USB)", "UDP (Kablosuz)", "TCP (WiFi)"])
-        self.connection_type.currentTextChanged.connect(self.on_connection_type_changed)
-        
-        self.port_combo = QComboBox()
-        self.baud_combo = QComboBox()
-        self.baud_combo.addItems(["57600", "115200", "38400", "19200", "9600"])
-        self.baud_combo.setCurrentText("57600")  # Telemetri modülleri için varsayılan
-        
-        # UDP/TCP için IP ve Port alanları
-        self.ip_input = QDoubleSpinBox()
-        self.ip_input.setDecimals(0)
-        self.ip_input.setRange(0, 999)
-        self.ip_input.setValue(127)
-        self.ip_input.setVisible(False)
-        
-        self.udp_port_input = QDoubleSpinBox()
-        self.udp_port_input.setDecimals(0)
-        self.udp_port_input.setRange(1000, 65535)
-        self.udp_port_input.setValue(14550)
-        self.udp_port_input.setVisible(False)
-        
-        self.refresh_button = QPushButton("Portları Yenile")
-        self.refresh_button.clicked.connect(self.refresh_ports)
-        self.connect_button = QPushButton("  BAĞLAN")
-        self.connect_button.clicked.connect(self.toggle_connection)
-        
-        connection_grid = QGridLayout()
-        connection_grid.addWidget(QLabel("Tip:"), 0, 0)
-        connection_grid.addWidget(self.connection_type, 0, 1)
-        connection_grid.addWidget(QLabel("Port:"), 1, 0)
-        connection_grid.addWidget(self.port_combo, 1, 1)
-        connection_grid.addWidget(QLabel("Baud:"), 2, 0)
-        connection_grid.addWidget(self.baud_combo, 2, 1)
-        connection_grid.addWidget(QLabel("IP:"), 3, 0)
-        connection_grid.addWidget(self.ip_input, 3, 1)
-        connection_grid.addWidget(QLabel("UDP Port:"), 4, 0)
-        connection_grid.addWidget(self.udp_port_input, 4, 1)
-        connection_grid.addWidget(self.refresh_button, 5, 0)
-        connection_grid.addWidget(self.connect_button, 5, 1)
-        connection_layout.addLayout(connection_grid)
-
-        # Telemetri Paneli
+        # 1. TELEMETRİ PANELİ - EN ÜSTTE
         telemetry_frame = QFrame()
         telemetry_frame.setFrameShape(QFrame.StyledPanel)
         telemetry_layout = QGridLayout(telemetry_frame)
@@ -207,7 +154,7 @@ class GCSApp(QWidget):
         self.attitude_indicator.setFixedSize(120, 120)
         telemetry_layout.addWidget(self.attitude_indicator, 1, 2, 4, 2)
         
-        # Grafikler Paneli
+        # 2. GRAFİKLER PANELİ - TELEMETRİ ALTINDA
         graphs_frame = QFrame()
         graphs_frame.setFrameShape(QFrame.StyledPanel)
         graphs_layout = QVBoxLayout(graphs_frame)
@@ -262,7 +209,7 @@ class GCSApp(QWidget):
         self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
         graphs_layout.addWidget(self.thruster_canvas)
         
-        # Log Paneli
+        # 3. SİSTEM LOGLARI PANELİ - GRAFİKLER ALTINDA
         log_frame = QFrame()
         log_frame.setFrameShape(QFrame.StyledPanel)
         log_layout = QVBoxLayout(log_frame)
@@ -273,8 +220,61 @@ class GCSApp(QWidget):
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
         log_layout.addWidget(self.log_display)
+
+        # 4. BAĞLANTI PANELİ - LOG ALTINDA
+        connection_frame = QFrame()
+        connection_frame.setFrameShape(QFrame.StyledPanel)
+        connection_layout = QVBoxLayout(connection_frame)
+        sidebar_layout.addWidget(connection_frame)
+
+        connection_title = QLabel("Bağlantı")
+        connection_title.setFont(QFont('Arial', 14, QFont.Bold))
+        connection_layout.addWidget(connection_title)
         
-        # Durum Paneli
+        # Bağlantı tipi seçimi
+        self.connection_type = QComboBox()
+        self.connection_type.addItems(["Serial (USB)", "UDP (Kablosuz)", "TCP (WiFi)"])
+        self.connection_type.currentTextChanged.connect(self.on_connection_type_changed)
+        
+        self.port_combo = QComboBox()
+        self.baud_combo = QComboBox()
+        self.baud_combo.addItems(["57600", "115200", "38400", "19200", "9600"])
+        self.baud_combo.setCurrentText("57600")  # Telemetri modülleri için varsayılan
+        
+        # UDP/TCP için IP ve Port alanları
+        self.ip_input = QDoubleSpinBox()
+        self.ip_input.setDecimals(0)
+        self.ip_input.setRange(0, 999)
+        self.ip_input.setValue(127)
+        self.ip_input.setVisible(False)
+        
+        self.udp_port_input = QDoubleSpinBox()
+        self.udp_port_input.setDecimals(0)
+        self.udp_port_input.setRange(1000, 65535)
+        self.udp_port_input.setValue(14550)
+        self.udp_port_input.setVisible(False)
+        
+        self.refresh_button = QPushButton("Portları Yenile")
+        self.refresh_button.clicked.connect(self.refresh_ports)
+        self.connect_button = QPushButton("  BAĞLAN")
+        self.connect_button.clicked.connect(self.toggle_connection)
+        
+        connection_grid = QGridLayout()
+        connection_grid.addWidget(QLabel("Tip:"), 0, 0)
+        connection_grid.addWidget(self.connection_type, 0, 1)
+        connection_grid.addWidget(QLabel("Port:"), 1, 0)
+        connection_grid.addWidget(self.port_combo, 1, 1)
+        connection_grid.addWidget(QLabel("Baud:"), 2, 0)
+        connection_grid.addWidget(self.baud_combo, 2, 1)
+        connection_grid.addWidget(QLabel("IP:"), 3, 0)
+        connection_grid.addWidget(self.ip_input, 3, 1)
+        connection_grid.addWidget(QLabel("UDP Port:"), 4, 0)
+        connection_grid.addWidget(self.udp_port_input, 4, 1)
+        connection_grid.addWidget(self.refresh_button, 5, 0)
+        connection_grid.addWidget(self.connect_button, 5, 1)
+        connection_layout.addLayout(connection_grid)
+
+        # 5. DURUM PANELİ
         status_frame = QFrame()
         status_frame.setFrameShape(QFrame.StyledPanel)
         status_layout = QVBoxLayout(status_frame)
@@ -286,7 +286,7 @@ class GCSApp(QWidget):
         self.status_label.setWordWrap(True)
         status_layout.addWidget(self.status_label)
 
-        # Görev Kontrol Paneli
+        # 6. GÖREV KONTROL PANELİ
         mission_control_frame = QFrame()
         mission_control_frame.setFrameShape(QFrame.StyledPanel)
         mission_control_layout = QVBoxLayout(mission_control_frame)
