@@ -3,6 +3,7 @@ import os
 import time
 import threading
 import math
+from collections import deque
 from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSignal, QObject, pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLabel,
                              QTextEdit, QHBoxLayout, QMessageBox, QGridLayout,
@@ -10,6 +11,14 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
 from PyQt5.QtGui import QPixmap, QIcon, QTransform, QTextCursor, QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWebChannel import QWebChannel
+
+# Matplotlib ve PyQt5 backend için
+import matplotlib
+matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.animation import FuncAnimation
 
 # Pixhawk bağlantısı için import edilecek (bu satırları aktif edin)
 from dronekit import connect, VehicleMode, LocationGlobalRelative, APIException
@@ -47,6 +56,16 @@ class GCSApp(QWidget):
         self.is_connected = False
         self.waypoints = []
         self.current_heading = 0
+        
+        # Grafik verileri için deque'lar (son 100 veri noktası)
+        self.graph_data_size = 100
+        self.speed_data = deque(maxlen=self.graph_data_size)
+        self.speed_setpoint_data = deque(maxlen=self.graph_data_size)
+        self.heading_data = deque(maxlen=self.graph_data_size)
+        self.heading_setpoint_data = deque(maxlen=self.graph_data_size)
+        self.thruster_left_data = deque(maxlen=self.graph_data_size)
+        self.thruster_right_data = deque(maxlen=self.graph_data_size)
+        self.time_data = deque(maxlen=self.graph_data_size)
         
         # SERVO_OUTPUT_RAW cache - DroneKit channels güncellenmiyor
         self.servo_output_cache = {}
@@ -188,6 +207,61 @@ class GCSApp(QWidget):
         self.attitude_indicator.setFixedSize(120, 120)
         telemetry_layout.addWidget(self.attitude_indicator, 1, 2, 4, 2)
         
+        # Grafikler Paneli
+        graphs_frame = QFrame()
+        graphs_frame.setFrameShape(QFrame.StyledPanel)
+        graphs_layout = QVBoxLayout(graphs_frame)
+        sidebar_layout.addWidget(graphs_frame)
+        
+        graphs_title = QLabel("Grafikler")
+        graphs_title.setFont(QFont('Arial', 14, QFont.Bold))
+        graphs_layout.addWidget(graphs_title)
+        
+        # 1. Grafik - Hız karşılaştırması (İki ayrı çizgi)
+        self.speed_figure = Figure(figsize=(3.5, 1.2), facecolor='white')
+        self.speed_canvas = FigureCanvas(self.speed_figure)
+        self.speed_canvas.setMaximumHeight(100)  # Çok küçük yükseklik
+        self.speed_canvas.setMinimumHeight(100)
+        self.speed_ax = self.speed_figure.add_subplot(111)
+        self.speed_ax.set_title('Hız: Mavi=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
+        self.speed_ax.set_ylabel('m/s', fontsize=6)
+        self.speed_ax.grid(True, alpha=0.2)
+        self.speed_ax.tick_params(labelsize=5, pad=1)
+        # X ekseni etiketlerini gizle (alan kazanmak için)
+        self.speed_ax.set_xticklabels([])
+        self.speed_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+        graphs_layout.addWidget(self.speed_canvas)
+        
+        # 2. Grafik - Heading karşılaştırması (İki ayrı çizgi)
+        self.heading_figure = Figure(figsize=(3.5, 1.2), facecolor='white')
+        self.heading_canvas = FigureCanvas(self.heading_figure)
+        self.heading_canvas.setMaximumHeight(100)  # Çok küçük yükseklik
+        self.heading_canvas.setMinimumHeight(100)
+        self.heading_ax = self.heading_figure.add_subplot(111)
+        self.heading_ax.set_title('Heading: Yeşil=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
+        self.heading_ax.set_ylabel('°', fontsize=6)
+        self.heading_ax.grid(True, alpha=0.2)
+        self.heading_ax.tick_params(labelsize=5, pad=1)
+        # X ekseni etiketlerini gizle (alan kazanmak için)
+        self.heading_ax.set_xticklabels([])
+        self.heading_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+        graphs_layout.addWidget(self.heading_canvas)
+        
+        # 3. Grafik - Thruster karşılaştırması (İki ayrı çizgi)
+        self.thruster_figure = Figure(figsize=(3.5, 1.2), facecolor='white')
+        self.thruster_canvas = FigureCanvas(self.thruster_figure)
+        self.thruster_canvas.setMaximumHeight(100)  # Çok küçük yükseklik
+        self.thruster_canvas.setMinimumHeight(100)
+        self.thruster_ax = self.thruster_figure.add_subplot(111)
+        self.thruster_ax.set_title('Thruster: Mavi=Sol, Kırmızı=Sağ', fontsize=8, pad=2)
+        self.thruster_ax.set_ylabel('%', fontsize=6)
+        self.thruster_ax.grid(True, alpha=0.2)
+        self.thruster_ax.tick_params(labelsize=5, pad=1)
+        # Sadece son grafikte X ekseni etiketleri göster
+        self.thruster_ax.set_xlabel('Zaman (s)', fontsize=6)
+        self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
+        graphs_layout.addWidget(self.thruster_canvas)
+        
         # Log Paneli
         log_frame = QFrame()
         log_frame.setFrameShape(QFrame.StyledPanel)
@@ -264,6 +338,10 @@ class GCSApp(QWidget):
         self.motor_timer = QTimer(self)
         self.motor_timer.timeout.connect(self.update_motor_simulation)
         self.motor_timer.start(1000)  # Motor simülasyonu 1s'de bir - daha az CPU kullanımı
+        
+        # Grafik güncellemesi için timer
+        self.graph_timer = QTimer(self)
+        self.graph_timer.timeout.connect(self.update_graphs)
 
         self.refresh_ports()
     
@@ -344,12 +422,16 @@ class GCSApp(QWidget):
             self.connect_button.setStyleSheet("background-color: red; color: white; font-weight: bold;")
             self.telemetry_timer.start(500)  # 500ms = 2Hz - daha hızlı güncelleme
             self.attitude_timer.start(50)   # 50ms = 20Hz - daha smooth attitude
+            self.graph_timer.start(1000)    # 1s = 1Hz - grafik güncellemesi
             
             # SERVO_OUTPUT_RAW mesajını request et
             self.request_servo_output()
             
-            # Bağlandıktan hemen sonra bir kez telemetri güncelle
+            # Bağlandıktan hemen sonra telemetri güncelle
             QTimer.singleShot(100, self.update_telemetry)  # 100ms sonra
+            # Thruster verisi için hemen motor güncelleme başlat
+            QTimer.singleShot(200, self.update_motor_simulation)  # 200ms sonra
+            QTimer.singleShot(500, self.update_motor_simulation)  # 500ms sonra da bir kez daha
             for btn in self.mode_buttons:
                 btn.setEnabled(True)
         else:
@@ -357,12 +439,16 @@ class GCSApp(QWidget):
             self.connect_button.setStyleSheet("")
             self.telemetry_timer.stop()
             self.attitude_timer.stop()
+            self.graph_timer.stop()
             for btn in self.mode_buttons:
                 btn.setEnabled(False)
             self.vehicle = None
             
             # Cache'i temizle
             self.servo_output_cache.clear()
+            
+            # Grafik verilerini temizle
+            self.clear_graph_data()
 
     def request_servo_output(self):
         """ArduPilot'tan SERVO_OUTPUT_RAW mesajını request et"""
@@ -379,8 +465,8 @@ class GCSApp(QWidget):
                 self.vehicle.send_mavlink(msg)
                 self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
                 
-                # Servo function'ları da alalım
-                QTimer.singleShot(2000, self.log_servo_functions)  # 2 saniye sonra
+                # Servo function'ları da alalım - daha hızlı başlat
+                QTimer.singleShot(500, self.log_servo_functions)  # 500ms sonra (eskiden 2000ms)
                 
             except Exception as e:
                 self.log_message_received.emit(f"SERVO_OUTPUT request hatası: {e}")
@@ -465,8 +551,8 @@ class GCSApp(QWidget):
                 self.vehicle.on_message('SERVO_OUTPUT_RAW')(servo_output_listener)
                 self.log_message_received.emit("✓ SERVO_OUTPUT_RAW listener eklendi")
                 
-                # Periyodik channel durumu kontrol et
-                QTimer.singleShot(5000, self.periodic_channel_check)  # 5 saniye sonra
+                # Periyodik channel durumu kontrol et - daha hızlı başlat
+                QTimer.singleShot(1000, self.periodic_channel_check)  # 1 saniye sonra (eskiden 5000ms)
                 
             except Exception as e:
                 self.log_message_received.emit(f"Servo debug hatası: {e}")
@@ -579,6 +665,10 @@ class GCSApp(QWidget):
             return
 
         try:
+            # Zaman damgası ekle
+            current_time = time.time()
+            self.time_data.append(current_time)
+            
             # GERÇEK ARDUPİLOT VERİLERİ - sadece mevcut olanları al
             speed = getattr(self.vehicle, 'groundspeed', None)
             heading = getattr(self.vehicle, 'heading', None)  
@@ -592,6 +682,17 @@ class GCSApp(QWidget):
             
             # Armed durumu
             armed = getattr(self.vehicle, 'armed', None)
+            
+            # Grafik verileri için değerleri topla
+            if speed is not None:
+                self.speed_data.append(speed)
+            else:
+                self.speed_data.append(0)
+                
+            if heading is not None:
+                self.heading_data.append(heading)
+            else:
+                self.heading_data.append(0)
             
             # Veri eksikse: gösterme 
             if speed is None:
@@ -615,11 +716,14 @@ class GCSApp(QWidget):
                 self.telemetry_values["Mod:"].setText(mode)
             
             # GERÇEK SETPOINT VERİLERİ - ArduPilot'tan al
+            speed_setpoint = 0
+            heading_setpoint = 0
+            
             if mode in ["AUTO", "GUIDED", "RTL"]:
                 # Heading Setpoint: Aktif waypoint varsa bearing hesapla
                 if len(self.waypoints) > 0 and heading is not None:
-                    target_heading = self.get_target_heading_from_mission(heading)
-                    self.telemetry_values["Heading Setpoint:"].setText(f"{target_heading:.0f}°")
+                    heading_setpoint = self.get_target_heading_from_mission(heading)
+                    self.telemetry_values["Heading Setpoint:"].setText(f"{heading_setpoint:.0f}°")
                 else:
                     self.telemetry_values["Heading Setpoint:"].setText("Veri yok")
 
@@ -628,14 +732,18 @@ class GCSApp(QWidget):
                 wp_speed = self.vehicle.parameters.get('WP_SPEED', None)
                 speed_param = wpnav_speed if wpnav_speed is not None else wp_speed
                 if speed_param is not None:
-                    speed_ms = speed_param / 100.0  # cm/s → m/s
-                    self.telemetry_values["Hız Setpoint:"].setText(f"{speed_ms:.2f} m/s")
+                    speed_setpoint = speed_param / 100.0  # cm/s → m/s
+                    self.telemetry_values["Hız Setpoint:"].setText(f"{speed_setpoint:.2f} m/s")
                 else:
                     self.telemetry_values["Hız Setpoint:"].setText("Veri yok")
             else:  # MANUAL, STABILIZE, etc.
                 # Manuel modda: setpoint YOK
                 self.telemetry_values["Hız Setpoint:"].setText("MANUAL")
                 self.telemetry_values["Heading Setpoint:"].setText("MANUAL")
+            
+            # Grafik için setpoint verilerini topla
+            self.speed_setpoint_data.append(speed_setpoint)
+            self.heading_setpoint_data.append(heading_setpoint)
             
             self.telemetry_values["Yükseklik:"].setText(f"{alt:.1f} m")
             self.telemetry_values["Heading:"].setText(f"{heading}°")
@@ -663,9 +771,7 @@ class GCSApp(QWidget):
                     self.current_heading_label.setText("Mevcut Rota: MANUAL")
                 else:
                     self.current_heading_label.setText(f"Mevcut Rota: {heading}°")
-            
 
-        
         except Exception as e:
             self.log_message_received.emit(f"Telemetri okuma hatası: {e}")
 
@@ -718,6 +824,10 @@ class GCSApp(QWidget):
                     left_power, left_dir = calculate_thruster_power(left_pwm)
                     right_power, right_dir = calculate_thruster_power(right_pwm)
                     
+                    # Grafik için thruster verilerini topla
+                    self.thruster_left_data.append(left_power)
+                    self.thruster_right_data.append(right_power)
+                    
                     # Sol motor ilk (UI sırası), Sağ motor ikinci
                     motor_data = [(left_power, left_dir, left_pwm, "Sol", "CH2(73)"),
                                   (right_power, right_dir, right_pwm, "Sağ", "CH1(74)")]
@@ -756,15 +866,22 @@ class GCSApp(QWidget):
         
         # SADECE GERÇEK VERİ - SİMÜLASYON YOK
         if not self.is_connected or not self.vehicle:
-            # Bağlantı yoksa: hiçbir şey gösterme
+            # Bağlantı yoksa: grafik için 0 değeri ekle
+            self.thruster_left_data.append(0)
+            self.thruster_right_data.append(0)
+            
             for i in range(2):
                 side = "Sol" if i == 0 else "Sağ"
                 self.thruster_labels[i].setText(f"{side}: BAĞLANTI YOK")
                 self.thruster_labels[i].setStyleSheet("border: 1px solid gray; padding: 5px; font-size: 10px; font-weight: bold; color: gray;")
             return
             
-        # Cache boşsa: bekle  
+        # Cache boşsa: grafik için 0 değeri ekle ama bekle
         if not self.servo_output_cache or '1' not in self.servo_output_cache or '2' not in self.servo_output_cache:
+            # Grafik için 0 değeri ekle - grafik hemen başlasın
+            self.thruster_left_data.append(0)
+            self.thruster_right_data.append(0)
+            
             for i in range(2):
                 side = "Sol" if i == 0 else "Sağ"
                 self.thruster_labels[i].setText(f"{side}: VERİ BEKLENİYOR")
@@ -1045,6 +1162,146 @@ class GCSApp(QWidget):
             
         except Exception as e:
             self.log_message_received.emit(f"Rota temizleme hatası: {e}")
+
+    def update_graphs(self):
+        """Grafikleri günceller - bağlantı yoksa da çiz"""
+        if len(self.time_data) < 2:
+            return
+        
+        try:
+            # X ekseni için zaman verisi - son 30 saniye
+            time_array = list(self.time_data)
+            current_time = time_array[-1] if time_array else time.time()
+            relative_times = [(t - current_time) for t in time_array]
+            
+            # 1. Hız grafiği - İki ayrı çizgi gösterimi
+            self.speed_ax.clear()
+            # Mavi çizgi: Gerçek hız
+            self.speed_ax.plot(relative_times, list(self.speed_data), 'b-', linewidth=2, alpha=0.9, label='Gerçek Hız')
+            # Kırmızı kesikli çizgi: Hız setpoint
+            self.speed_ax.plot(relative_times, list(self.speed_setpoint_data), 'r--', linewidth=2, alpha=0.9, label='Setpoint')
+            self.speed_ax.set_title('Hız: Mavi=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
+            self.speed_ax.set_ylabel('m/s', fontsize=6)
+            self.speed_ax.grid(True, alpha=0.2)
+            self.speed_ax.tick_params(labelsize=5, pad=1)
+            self.speed_ax.set_xticklabels([])  # X ekseni etiketlerini gizle
+            self.speed_ax.set_xlim(-30, 0)  # Son 30 saniye
+            # Y ekseni otomatik ölçekleme - hız değerlerine göre
+            speed_values = list(self.speed_data) + list(self.speed_setpoint_data)
+            if speed_values:
+                valid_speeds = [v for v in speed_values if v is not None and v >= 0]
+                if valid_speeds:
+                    max_speed = max(valid_speeds)
+                    self.speed_ax.set_ylim(0, max(max_speed + 1, 5))  # En az 5 m/s göster
+                else:
+                    self.speed_ax.set_ylim(0, 5)
+            else:
+                self.speed_ax.set_ylim(0, 5)
+            self.speed_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+            self.speed_canvas.draw()
+            
+            # 2. Heading grafiği - İki ayrı çizgi gösterimi
+            self.heading_ax.clear()
+            # Yeşil çizgi: Gerçek heading
+            self.heading_ax.plot(relative_times, list(self.heading_data), 'g-', linewidth=2, alpha=0.9, label='Gerçek Heading')
+            # Kırmızı kesikli çizgi: Heading setpoint
+            self.heading_ax.plot(relative_times, list(self.heading_setpoint_data), 'r--', linewidth=2, alpha=0.9, label='Setpoint')
+            self.heading_ax.set_title('Heading: Yeşil=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
+            self.heading_ax.set_ylabel('°', fontsize=6)
+            self.heading_ax.grid(True, alpha=0.2)
+            self.heading_ax.tick_params(labelsize=5, pad=1)
+            self.heading_ax.set_xticklabels([])  # X ekseni etiketlerini gizle
+            self.heading_ax.set_xlim(-30, 0)  # Son 30 saniye
+            # Y ekseni akıllı ölçekleme - heading değerlerine göre
+            heading_values = list(self.heading_data) + list(self.heading_setpoint_data)
+            if heading_values:
+                valid_headings = [v for v in heading_values if v is not None and v >= 0]
+                if valid_headings:
+                    min_heading = min(valid_headings)
+                    max_heading = max(valid_headings)
+                    # Eğer değerler 0 civarında değilse, o aralığı göster
+                    if max_heading - min_heading > 180:  # 180°'den fazla fark varsa tam aralık göster
+                        self.heading_ax.set_ylim(0, 360)
+                    else:
+                        # Dar aralık için optimize edilmiş görünüm
+                        margin = max(20, (max_heading - min_heading) * 0.2)  # En az 20° margin
+                        self.heading_ax.set_ylim(max(0, min_heading - margin), min(360, max_heading + margin))
+                else:
+                    self.heading_ax.set_ylim(0, 360)  # Varsayılan
+            else:
+                self.heading_ax.set_ylim(0, 360)
+            self.heading_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+            self.heading_canvas.draw()
+            
+            # 3. Thruster grafiği - İki ayrı çizgi gösterimi
+            self.thruster_ax.clear()
+            # Mavi çizgi: Sol thruster
+            self.thruster_ax.plot(relative_times, list(self.thruster_left_data), 'b-', linewidth=2, alpha=0.9, label='Sol Motor')
+            # Kırmızı çizgi: Sağ thruster
+            self.thruster_ax.plot(relative_times, list(self.thruster_right_data), 'r-', linewidth=2, alpha=0.9, label='Sağ Motor')
+            self.thruster_ax.set_title('Thruster: Mavi=Sol, Kırmızı=Sağ', fontsize=8, pad=2)
+            self.thruster_ax.set_xlabel('Zaman (s)', fontsize=6)
+            self.thruster_ax.set_ylabel('%', fontsize=6)
+            self.thruster_ax.grid(True, alpha=0.2)
+            self.thruster_ax.tick_params(labelsize=5, pad=1)
+            self.thruster_ax.set_xlim(-30, 0)  # Son 30 saniye
+            # Y ekseni otomatik ölçekleme - thruster değerlerine göre
+            thruster_values = list(self.thruster_left_data) + list(self.thruster_right_data)
+            if thruster_values:
+                valid_thrusters = [v for v in thruster_values if v is not None and v >= 0]
+                if valid_thrusters:
+                    max_thruster = max(valid_thrusters)
+                    self.thruster_ax.set_ylim(0, max(max_thruster + 10, 100))  # En az 100% göster
+                else:
+                    self.thruster_ax.set_ylim(0, 100)
+            else:
+                self.thruster_ax.set_ylim(0, 100)
+            self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
+            self.thruster_canvas.draw()
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Grafik güncelleme hatası: {e}")
+
+    def clear_graph_data(self):
+        """Grafik verilerini temizler"""
+        self.speed_data.clear()
+        self.speed_setpoint_data.clear()
+        self.heading_data.clear()
+        self.heading_setpoint_data.clear()
+        self.thruster_left_data.clear()
+        self.thruster_right_data.clear()
+        self.time_data.clear()
+        
+        # Grafikleri temizle
+        if hasattr(self, 'speed_ax'):
+            self.speed_ax.clear()
+            self.speed_ax.set_title('Hız', fontsize=8, pad=2)
+            self.speed_ax.set_ylabel('m/s', fontsize=6)
+            self.speed_ax.grid(True, alpha=0.2)
+            self.speed_ax.tick_params(labelsize=5, pad=1)
+            self.speed_ax.set_xticklabels([])
+            self.speed_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+            self.speed_canvas.draw()
+            
+        if hasattr(self, 'heading_ax'):
+            self.heading_ax.clear()
+            self.heading_ax.set_title('Heading', fontsize=8, pad=2)
+            self.heading_ax.set_ylabel('°', fontsize=6)
+            self.heading_ax.grid(True, alpha=0.2)
+            self.heading_ax.tick_params(labelsize=5, pad=1)
+            self.heading_ax.set_xticklabels([])
+            self.heading_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.1)
+            self.heading_canvas.draw()
+            
+        if hasattr(self, 'thruster_ax'):
+            self.thruster_ax.clear()
+            self.thruster_ax.set_title('Thruster', fontsize=8, pad=2)
+            self.thruster_ax.set_xlabel('Zaman (s)', fontsize=6)
+            self.thruster_ax.set_ylabel('%', fontsize=6)
+            self.thruster_ax.grid(True, alpha=0.2)
+            self.thruster_ax.tick_params(labelsize=5, pad=1)
+            self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
+            self.thruster_canvas.draw()
 
 if __name__ == '__main__':
     # qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9223") # Debug için
