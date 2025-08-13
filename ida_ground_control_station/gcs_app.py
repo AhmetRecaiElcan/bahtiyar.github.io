@@ -57,6 +57,14 @@ class GCSApp(QWidget):
         self.waypoints = []
         self.current_heading = 0
         
+        # Önceden tanımlanmış görev koordinatları (İstanbul çevresi)
+        self.mission_coordinates = [
+            [41.0082, 28.9784],   # İstanbul merkez (Fatih)
+            [41.0186, 28.9647],   # Eminönü
+            [41.0214, 28.9731],   # Karaköy
+            [41.0136, 28.9550]    # Beyoğlu
+        ]
+        
         # Grafik verileri için deque'lar (son 100 veri noktası)
         self.graph_data_size = 100
         self.speed_data = deque(maxlen=self.graph_data_size)
@@ -312,17 +320,20 @@ class GCSApp(QWidget):
         self.upload_mission_button = QPushButton("Rotayı Gönder")
         self.read_mission_button = QPushButton("Rotayı Oku")
         self.clear_mission_button = QPushButton("Rotayı Temizle")
+        self.load_mission_button = QPushButton("Görev")
         mission_buttons_layout.addWidget(self.upload_mission_button)
         mission_buttons_layout.addWidget(self.read_mission_button)
         mission_buttons_layout.addWidget(self.clear_mission_button)
+        mission_buttons_layout.addWidget(self.load_mission_button)
         mission_control_layout.addLayout(mission_buttons_layout)
         
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
         self.read_mission_button.clicked.connect(self.read_mission_from_vehicle)
         self.clear_mission_button.clicked.connect(self.clear_mission)
+        self.load_mission_button.clicked.connect(self.load_predefined_mission)
 
         self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, 
-                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button]
+                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button]
         for btn in self.mode_buttons:
             btn.setEnabled(False)
 
@@ -1302,6 +1313,32 @@ class GCSApp(QWidget):
             self.thruster_ax.tick_params(labelsize=5, pad=1)
             self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
             self.thruster_canvas.draw()
+
+    def load_predefined_mission(self):
+        """Önceden tanımlanmış görev koordinatlarını yükler ve haritaya gönderir"""
+        try:
+            # Mevcut waypoint'leri temizle
+            self.waypoints.clear()
+            self.bridge.clearMap.emit()
+            
+            # Önceden tanımlanmış koordinatları waypoint listesine ekle
+            for i, (lat, lon) in enumerate(self.mission_coordinates):
+                waypoint_num = i + 1
+                self.waypoints.append({"lat": lat, "lng": lon, "num": waypoint_num})
+                self.bridge.addWaypoint.emit(lat, lon)
+            
+            # Koordinatları haritaya gönder ve log'a yaz
+            self.log_message_received.emit(f"Görev yüklendi: {len(self.mission_coordinates)} waypoint eklendi")
+            for i, (lat, lon) in enumerate(self.mission_coordinates):
+                self.log_message_received.emit(f"Waypoint {i+1}: {lat:.6f}, {lon:.6f}")
+            
+            # Eğer araç bağlıysa, otomatik olarak görevi araca gönder
+            if self.is_connected and self.vehicle:
+                self.send_mission_to_vehicle()
+                
+        except Exception as e:
+            self.log_message_received.emit(f"Görev yükleme hatası: {str(e)}")
+            QMessageBox.warning(self, "Hata", f"Görev yüklenirken hata oluştu: {str(e)}")
 
 if __name__ == '__main__':
     # qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9223") # Debug için
