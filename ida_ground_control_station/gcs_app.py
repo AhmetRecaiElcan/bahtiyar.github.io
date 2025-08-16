@@ -899,16 +899,23 @@ class GCSApp(QWidget):
                 self.thruster_labels[i].setStyleSheet("border: 1px solid orange; padding: 5px; font-size: 10px; font-weight: bold; color: orange;")
             return
 
+
     def location_callback(self, vehicle, attr_name, value):
+        # GPS fix_type ve uydu sayısını logla, haritayı her durumda güncelle
         if value and self.vehicle.heading is not None:
-            # Koordinat doğruluğu için debug log (sadece 10 saniyede bir)
             import time
             current_time = time.time()
+            gps = getattr(self.vehicle, 'gps_0', None)
+            fix_type = getattr(gps, 'fix_type', 'N/A') if gps else 'N/A'
+            satellites = getattr(gps, 'satellites_visible', 'N/A') if gps else 'N/A'
             if not hasattr(self, '_last_coord_log') or current_time - self._last_coord_log > 10:
                 self._last_coord_log = current_time
-                precision_info = f"Koordinat: {value.lat:.6f}, {value.lon:.6f}, Heading: {self.vehicle.heading}°"
+                precision_info = (
+                    f"Koordinat: {value.lat:.6f}, {value.lon:.6f}, Heading: {self.vehicle.heading}°, "
+                    f"GPS Fix: {fix_type}, Uydu: {satellites}"
+                )
                 self.log_message_received.emit(f"📍 {precision_info}")
-            
+            # Fix tipi ne olursa olsun haritayı güncelle
             self.bridge.updateVehiclePosition.emit(value.lat, value.lon, self.vehicle.heading)
 
     def heading_callback(self, vehicle, attr_name, value):
