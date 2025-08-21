@@ -12,6 +12,13 @@ import time
 import math
 import cv2
 import numpy as np
+
+# Python 3.10+ uyumluluğu: bazı paketler collections.MutableMapping bekler
+import collections as _collections
+import collections.abc as _collections_abc
+if not hasattr(_collections, 'MutableMapping'):
+    _collections.MutableMapping = _collections_abc.MutableMapping
+
 from dronekit import connect, VehicleMode
 
 # Ayarlar
@@ -22,6 +29,7 @@ CAM_INDEX = 0
 # PWM değerleri
 PWM_STOP = 1500
 PWM_FAST = 1800
+PWM_TURN = 1900  # Dönüş anlarında daha yüksek gaz
 
 # Dönüş keskinliği ayarları (normal GPS navigasyon için)
 # Daha agresif ve doğru yön işaretli direksiyon kontrolü
@@ -50,6 +58,18 @@ obstacle_detected = False
 obstacle_avoidance_active = False
 avoidance_start_time = 0
 avoidance_stage = 0  # 0: normal, 1: yan hareket, 2: düz git, 3: geri dön
+
+def steer_pwm_for_direction(direction: str, offset_pwm: int) -> int:
+    """Yön bayrağına göre sağ/sol için PWM hesapla.
+    direction: 'right' | 'left'
+    offset_pwm: PWM_STOP'tan sapma miktarı (pozitif)
+    """
+    offset_pwm = int(abs(offset_pwm))
+    if direction == 'right':
+        signed = offset_pwm if STEER_RIGHT_IS_PWM_HIGH else -offset_pwm
+    else:  # 'left'
+        signed = -offset_pwm if STEER_RIGHT_IS_PWM_HIGH else offset_pwm
+    return PWM_STOP + signed
 
 def detect_obstacle_position(roi, mask_yellow):
     """Engelin konumunu belirle (sol, orta, sağ)"""
@@ -97,16 +117,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
     if avoidance_stage == 1:  # Yan hareket (2 saniye)
         if obstacle_position == "left":
             # Sol engel -> sağa git
-            send_rc(PWM_FAST, PWM_STOP + 120)  # sağa dön
+            send_rc(PWM_TURN, PWM_STOP + 120)  # sağa dön
             print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
         elif obstacle_position == "right":
             # Sağ engel -> sola git  
-            send_rc(PWM_FAST, PWM_STOP - 120)  # sola dön
+            send_rc(PWM_TURN, PWM_STOP - 120)  # sola dön
             print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
         else:  # center
             # Orta engel -> rastgele tarafa kaç
             direction = 1 if (current_time % 2) > 1 else -1
-            send_rc(PWM_FAST, PWM_STOP + (120 * direction))
+            send_rc(PWM_TURN, PWM_STOP + (120 * direction))
             print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
         
         if elapsed > 2.0:  # 2 saniye yan hareket
@@ -124,16 +144,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
     elif avoidance_stage == 3:  # Geri dön (1.5 saniye)
         if obstacle_position == "left":
             # Sola geri dön
-            send_rc(PWM_FAST, PWM_STOP - 100)
+            send_rc(PWM_TURN, PWM_STOP - 100)
             print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
         elif obstacle_position == "right":
             # Sağa geri dön
-            send_rc(PWM_FAST, PWM_STOP + 100)
+            send_rc(PWM_TURN, PWM_STOP + 100)
             print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
         else:  # center
             # Ters yöne geri dön
             direction = -1 if (current_time % 2) > 1 else 1
-            send_rc(PWM_FAST, PWM_STOP + (100 * direction))
+            send_rc(PWM_TURN, PWM_STOP + (100 * direction))
             print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
         
         if elapsed > 1.5:  # 1.5 saniye geri dön
@@ -202,8 +222,8 @@ def bearing_to_motor_command(target_bearing, current_heading):
         if abs_err >= FAST_TURN_THRESHOLD_DEG:
             steer_offset = STEER_OFFSET_MAX
 
-        # Gazı kısmadan keskin dön
-        thr = PWM_FAST
+        # Dönüşte gazı artır
+        thr = PWM_TURN
 
         # Yön işaretini tek bayrakla yönet
         if bearing_diff > 0:  # hedef sağda
@@ -261,10 +281,10 @@ def update_simulated_position(thr, steer):
     # Motor komutlarına göre pozisyon değişimi simüle et
     if thr > PWM_STOP:  # ileri gidiyoruz
         # Heading değişimi (steering'e göre)
-        if steer > PWM_STOP + 20:  # sağa dönüş
-            sim_heading += 2
+        if steer > PWM_STOP + 20:  # sağa dönüş (PWM yüksek -> sağ mı?)
+            sim_heading += 2 if STEER_RIGHT_IS_PWM_HIGH else -2
         elif steer < PWM_STOP - 20:  # sola dönüş
-            sim_heading -= 2
+            sim_heading -= 2 if STEER_RIGHT_IS_PWM_HIGH else +2
         
         sim_heading = (sim_heading + 360) % 360
         
@@ -445,14 +465,16 @@ try:
             print("➡️ DÜZ GİT")
         elif key == ord('2'):
             current_mode = "MANUAL"
-            send_rc(PWM_FAST, PWM_STOP + 100)
-            update_simulated_position(PWM_FAST, PWM_STOP + 100)
-            print("↗️ SAĞA DÖN")
+            steer_cmd = steer_pwm_for_direction('right', 200)
+            send_rc(PWM_FAST, steer_cmd)
+            update_simulated_position(PWM_FAST, steer_cmd)
+            print("↗️ SAĞA DÖN (manuel)")
         elif key == ord('3'):
             current_mode = "MANUAL"
-            send_rc(PWM_FAST, PWM_STOP - 100)
-            update_simulated_position(PWM_FAST, PWM_STOP - 100)
-            print("↖️ SOLA DÖN")
+            steer_cmd = steer_pwm_for_direction('left', 200)
+            send_rc(PWM_FAST, steer_cmd)
+            update_simulated_position(PWM_FAST, steer_cmd)
+            print("↖️ SOLA DÖN (manuel)")
         elif key == ord('4'):
             # Sol engel atlama testi
             current_mode = "MANUAL"
