@@ -1,16 +1,11 @@
-# scripts/task2_color_control.py
+# GPS Navigation - Simüle Test Modu
 """
-Renk → Motor Haritası (Sadece Kırmızı ve Sarı)
-----------------------------------------------
-• Kırmızı  → sadece SAĞ motor ileri
-• Sarı     → sadece SOL motor ileri
-• Diğer    → du            if stable == 'yellow':
-                # SARI → SOL motor çalışsın → steer sağa çevir (sağ motor yavaşlar/durur)
-                steer = PWM_STOP + S_rel              
-            else:  # red
-                # KIRMIZI → SAĞ motor çalışsın → steer sola çevir (sol motor yavaşlar/durur)
-                steer = PWM_STOP - S_relkış: pencere odaklı iken 'q' veya terminalde Ctrl-C.
-Not: Pixhawk MANUAL modda ve arm edilmiş olmalı.
+GPS Simülasyon Test Sistemi
+==========================
+• Sahte GPS koordinatları kullanır
+• Motor komutlarını test eder
+• Engel algılama çalışır
+• Gerçek GPS olmadan test edilebilir
 """
 
 import time
@@ -19,282 +14,456 @@ import cv2
 import numpy as np
 from dronekit import connect, VehicleMode
 
-# —————————————————— Kullanıcı ayarları ——————————————————
-CONNECTION = 'COM18'     # telemetri kullanacaksan buraya 'COM5' ya da 'udp:127.0.0.1:14550' yaz
-BAUD       = 57600       # Test sonucuna göre 57600 çalışıyor
-CAM_INDEX  = 0          # kamera index
-SHOW_WIN   = True
-CONNECTION_TIMEOUT = 60  # Bağlantı timeout süresini artır
+# Ayarlar
+CONNECTION = 'COM17'
+BAUD = 115200
+CAM_INDEX = 0
 
 # PWM değerleri
-PWM_STOP   = 1500
-PWM_FWD    = 1600       # tek motor ileri kullanacağımız temel hız
-PWM_MAX    = 2000       # siyah için tam gaz
+PWM_STOP = 1500
+PWM_FAST = 1800
 
-#40,7710894
-#41,4372419
-#28,9784
-# Motor karışım oranı (dönüş keskinliği)
-MANUAL_MIX = 0.5        # 0.1=keskin, 0.5=orta, 1.0=yumuşak
+# Hedef koordinat
+TARGET_LAT = 40.7712335   # Mission Planner hedef
+TARGET_LON = 29.4375378   # Mission Planner hedef
 
-# Renk karar eşiği
-MIN_RATIO  = 0.10       # ROI’nin en az %10’u aynı renkten olmalı
-MARGIN     = 0.05       # kazanan - 2.ci arasındaki fark en az %5 olmalı
-SMOOTH_N   = 5          # son N karara çoğunluk oyu
-DEADMAN_T  = 0.6        # (sn) bu sürede frame/karar yoksa dur
+# Simüle GPS (test için)
+SIMULATE_GPS = False   # True = sahte GPS kullan, False = gerçek GPS
+sim_lat = 40.7712335    # Başlangıç koordinatı (hedefe yakın)
+sim_lon = 29.4375378 
+sim_heading = 45     # Başlangıç yönü (kuzeydoğu)
 
-# ROI (çerçevenin ortası)
-ROI_SCALE  = 0.6        # genişlik ve yükseklik için %60’lık orta bölge
+# Global değişkenler
+current_mode = "MANUAL"
+obstacle_detected = False
+obstacle_avoidance_active = False
+avoidance_start_time = 0
+avoidance_stage = 0  # 0: normal, 1: yan hareket, 2: düz git, 3: geri dön
 
-# —————————————————— Bağlantı ——————————————————
-print("▶ Pixhawk'a bağlanılıyor …")
-try:
-    # İlk önce wait_ready=False ile bağlan
-    vehicle = connect(CONNECTION, baud=BAUD, wait_ready=False, timeout=CONNECTION_TIMEOUT)
-    print("▶ Bağlantı kuruldu, araç hazırlanıyor...")
+def detect_obstacle_position(roi, mask_yellow):
+    """Engelin konumunu belirle (sol, orta, sağ)"""
+    h, w = roi.shape[:2]
     
-    # Manuel olarak hazırlık durumunu kontrol et
-    print("▶ Sistem durumu kontrol ediliyor...")
-    start_time = time.time()
+    # ROI'yi 3 parçaya böl
+    left_part = mask_yellow[:, :w//3]
+    center_part = mask_yellow[:, w//3:2*w//3]
+    right_part = mask_yellow[:, 2*w//3:]
     
-    while time.time() - start_time < CONNECTION_TIMEOUT:
-        try:
-            if vehicle.system_status and vehicle.mode:
-                print(f"▶ Sistem durumu: {vehicle.system_status}")
-                print(f"▶ Mevcut mod: {vehicle.mode}")
-                break
-        except Exception as e:
-            print(f"▶ Bekleniyor... ({int(time.time() - start_time)}s)")
-            time.sleep(1)
+    # Her bölgedeki sarı piksel yoğunluğu
+    left_density = np.count_nonzero(left_part) / (left_part.shape[0] * left_part.shape[1])
+    center_density = np.count_nonzero(center_part) / (center_part.shape[0] * center_part.shape[1])
+    right_density = np.count_nonzero(right_part) / (right_part.shape[0] * right_part.shape[1])
+    
+    print(f"🔍 Engel yoğunluğu - Sol: {left_density*100:.1f}%, Orta: {center_density*100:.1f}%, Sağ: {right_density*100:.1f}%")
+    
+    # En yoğun bölgeyi bul
+    max_density = max(left_density, center_density, right_density)
+    
+    if max_density < 0.05:  # çok az engel
+        return "none"
+    elif left_density == max_density:
+        return "left"
+    elif right_density == max_density:
+        return "right"
     else:
-        print("WARNING: Araç tam olarak hazır değil ama devam ediliyor...")
+        return "center"
+
+def obstacle_avoidance_maneuver(obstacle_position):
+    """Engel atlama manevrası"""
+    global obstacle_avoidance_active, avoidance_start_time, avoidance_stage
+    
+    current_time = time.time()
+    
+    if not obstacle_avoidance_active:
+        # Manevra başlat
+        obstacle_avoidance_active = True
+        avoidance_start_time = current_time
+        avoidance_stage = 1
+        print(f"🚁 ENGEL ATLAMA BAŞLADI - Engel konumu: {obstacle_position}")
+    
+    elapsed = current_time - avoidance_start_time
+    
+    if avoidance_stage == 1:  # Yan hareket (2 saniye)
+        if obstacle_position == "left":
+            # Sol engel -> sağa git
+            send_rc(PWM_FAST, PWM_STOP + 120)  # sağa dön
+            print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
+        elif obstacle_position == "right":
+            # Sağ engel -> sola git  
+            send_rc(PWM_FAST, PWM_STOP - 120)  # sola dön
+            print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
+        else:  # center
+            # Orta engel -> rastgele tarafa kaç
+            direction = 1 if (current_time % 2) > 1 else -1
+            send_rc(PWM_FAST, PWM_STOP + (120 * direction))
+            print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
         
-except Exception as e:
-    print(f"HATA: Bağlantı kurulamadı - {e}")
-    print("Çözüm önerileri:")
-    print("1. COM18 portunun doğru olduğundan emin olun")
-    print("2. Telemetri radyonun bağlı ve çalıştığından emin olun") 
-    print("3. Mission Planner'da telemetri çalışıyor mu kontrol edin")
-    print("4. Baud rate'i 57600'e değiştirmeyi deneyin")
-    exit(1)
+        if elapsed > 2.0:  # 2 saniye yan hareket
+            avoidance_stage = 2
+            avoidance_start_time = current_time
+            
+    elif avoidance_stage == 2:  # Düz git (1.5 saniye)
+        send_rc(PWM_FAST, PWM_STOP)
+        print("➡️ ENGEL ATLAMA - DÜZ GİDİYOR")
+        
+        if elapsed > 1.5:  # 1.5 saniye düz git
+            avoidance_stage = 3
+            avoidance_start_time = current_time
+            
+    elif avoidance_stage == 3:  # Geri dön (1.5 saniye)
+        if obstacle_position == "left":
+            # Sola geri dön
+            send_rc(PWM_FAST, PWM_STOP - 100)
+            print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
+        elif obstacle_position == "right":
+            # Sağa geri dön
+            send_rc(PWM_FAST, PWM_STOP + 100)
+            print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
+        else:  # center
+            # Ters yöne geri dön
+            direction = -1 if (current_time % 2) > 1 else 1
+            send_rc(PWM_FAST, PWM_STOP + (100 * direction))
+            print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
+        
+        if elapsed > 1.5:  # 1.5 saniye geri dön
+            # Manevra tamamlandı
+            obstacle_avoidance_active = False
+            avoidance_stage = 0
+            print("✅ ENGEL ATLAMA TAMAMLANDI")
+            return False  # manevra bitti
+    
+    return True  # manevra devam ediyor
 
-# Mod ayarla ve arm et
-print("▶ MANUAL moda geçiliyor...")
-vehicle.mode = VehicleMode("MANUAL")
+def calculate_bearing(lat1, lon1, lat2, lon2):
+    """İki GPS koordinatı arasındaki bearing hesapla"""
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    dlon = lon2 - lon1
+    y = math.sin(dlon) * math.cos(lat2)
+    x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
+    
+    bearing = math.atan2(y, x)
+    bearing = math.degrees(bearing)
+    bearing = (bearing + 360) % 360
+    return bearing
 
-# Mod değişimini bekle
-mode_start = time.time()
-while vehicle.mode.name != "MANUAL" and time.time() - mode_start < 10:
-    print(f"▶ Mod değiştiriliyor... Şu anki mod: {vehicle.mode.name}")
-    time.sleep(0.5)
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """İki koordinat arası mesafe (metre)"""
+    # Basit hesaplama (küçük mesafeler için)
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    # Derece başına yaklaşık metre
+    lat_to_m = 111000  # 1 derece = ~111km
+    lon_to_m = 111000 * math.cos(math.radians(lat1))
+    
+    distance = math.sqrt((dlat * lat_to_m)**2 + (dlon * lon_to_m)**2)
+    return distance
 
-print(f"▶ Mevcut mod: {vehicle.mode.name}")
+def bearing_to_motor_command(target_bearing, current_heading):
+    """Bearing farkına göre motor komutları"""
+    bearing_diff = target_bearing - current_heading
+    
+    # -180 ile +180 normalize
+    if bearing_diff > 180:
+        bearing_diff -= 360
+    elif bearing_diff < -180:
+        bearing_diff += 360
+    
+    print(f"🧭 Hedef: {target_bearing:.0f}°, Mevcut: {current_heading:.0f}°, Fark: {bearing_diff:.0f}°")
+    
+    if abs(bearing_diff) < 15:  # düz git
+        thr, steer = PWM_FAST, PWM_STOP
+        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer}")
+    elif bearing_diff > 0:  # sağa dön
+        steer_offset = min(150, abs(bearing_diff) * 2)
+        thr = PWM_FAST
+        steer = PWM_STOP - steer_offset  # TERS: test için
+        print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
+    else:  # sola dön
+        steer_offset = min(150, abs(bearing_diff) * 2)
+        thr = PWM_FAST
+        steer = PWM_STOP + steer_offset  # TERS: test için
+        print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
+    
+    return thr, steer
 
-# Arm etmeyi dene
-print("▶ Araç arm ediliyor...")
-arm_attempts = 0
-max_arm_attempts = 10
-
-while not vehicle.armed and arm_attempts < max_arm_attempts:
-    try:
-        vehicle.armed = True
-        arm_attempts += 1
-        time.sleep(0.5)
-        if not vehicle.armed:
-            print(f"▶ Arm denemesi {arm_attempts}/{max_arm_attempts}...")
-    except Exception as e:
-        print(f"▶ Arm hatası: {e}")
-        time.sleep(1)
-
-if vehicle.armed:
-    print("ARMED ✔")
-else:
-    print("WARNING: Araç arm edilemedi ama devam ediliyor...")
-    print("Manuel olarak Mission Planner'dan arm etmeyi deneyin")
-
-# ArduRover miks parametresi (tek motoru durdurma hesabı için gerekli)
-try:
-    mix = float(vehicle.parameters.get('MOT_STR_THR_MIX', MANUAL_MIX))
-    if not (0.1 <= mix <= 1.0):
-        mix = MANUAL_MIX
-except Exception:
-    mix = MANUAL_MIX
-print(f"▶ MOT_STR_THR_MIX = {mix:.2f} (Manuel: {MANUAL_MIX})")
-
-# RC override helper
 def send_rc(throttle_pwm: int, steer_pwm: int):
-    vehicle.channels.overrides = {'3': int(throttle_pwm), '1': int(steer_pwm)}
+    """Motor komutları gönder"""
+    throttle_pwm = max(1100, min(1900, int(throttle_pwm)))
+    steer_pwm = max(1100, min(1900, int(steer_pwm)))
+    
+    vehicle.channels.overrides = {
+        '3': throttle_pwm,
+        '1': steer_pwm,
+        '2': steer_pwm
+    }
+    print(f"🔧 MOTOR: CH3={throttle_pwm}, CH1={steer_pwm}, CH2={steer_pwm}")
 
 def stop_all():
     send_rc(PWM_STOP, PWM_STOP)
+    print("⏹️ MOTORLAR DURDURULDU")
 
-# Başlangıç dur
+def get_gps_data():
+    """GPS verisi al (gerçek veya simüle)"""
+    global sim_lat, sim_lon, sim_heading
+    
+    if SIMULATE_GPS:
+        return sim_lat, sim_lon, sim_heading
+    else:
+        # Gerçek GPS
+        if vehicle.location.global_frame:
+            lat = vehicle.location.global_frame.lat
+            lon = vehicle.location.global_frame.lon
+            heading = vehicle.heading if vehicle.heading else 0
+            
+            if lat != 0 and lon != 0:
+                return lat, lon, heading
+        
+        return None, None, None
+
+def update_simulated_position(thr, steer):
+    """Simüle pozisyonu güncelle (motor komutlarına göre)"""
+    global sim_lat, sim_lon, sim_heading
+    
+    if not SIMULATE_GPS:
+        return
+    
+    # Motor komutlarına göre pozisyon değişimi simüle et
+    if thr > PWM_STOP:  # ileri gidiyoruz
+        # Heading değişimi (steering'e göre)
+        if steer > PWM_STOP + 20:  # sağa dönüş
+            sim_heading += 2
+        elif steer < PWM_STOP - 20:  # sola dönüş
+            sim_heading -= 2
+        
+        sim_heading = (sim_heading + 360) % 360
+        
+        # Pozisyon değişimi (heading yönünde)
+        speed_factor = 0.00001  # simülasyon hızı
+        sim_lat += speed_factor * math.cos(math.radians(sim_heading))
+        sim_lon += speed_factor * math.sin(math.radians(sim_heading))
+
+# Bağlantı
+print("▶ Bağlanılıyor...")
+try:
+    vehicle = connect(CONNECTION, baud=BAUD, wait_ready=False, timeout=30)
+    vehicle.mode = VehicleMode("MANUAL")
+    
+    # Arm
+    for i in range(5):
+        vehicle.armed = True
+        time.sleep(0.5)
+        if vehicle.armed:
+            break
+    
+    print("✅ Bağlantı OK, ARMED" if vehicle.armed else "⚠️ ARM EDİLEMEDİ")
+    
+except Exception as e:
+    print(f"❌ Hata: {e}")
+    exit(1)
+
 stop_all()
 
-# —————————————————— Kamera ——————————————————
+# Kamera
 cap = cv2.VideoCapture(CAM_INDEX)
 if not cap.isOpened():
-    raise RuntimeError("Kamera açılamadı.")
-print("▶ Kamera aktif – q / Ctrl-C ile çıkış\n")
+    print("❌ Kamera hatası")
+    exit(1)
 
-# CLAHE: aydınlık dengesi (V kanalında)
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+print(f"\n📍 SİMÜLE GPS: {'AÇIK' if SIMULATE_GPS else 'KAPALI'}")
+print(f"🎯 Hedef: {TARGET_LAT:.6f}, {TARGET_LON:.6f}")
+print(f"📍 Başlangıç: {sim_lat:.6f}, {sim_lon:.6f}")
 
-# Temporal smoothing hafızası
-last_choices = []
-last_cmd_time = time.time()
+print("\n🎮 KONTROLLER:")
+print("'g' = GPS otomatik modu")
+print("'1' = Test: Düz git")
+print("'2' = Test: Sağa dön")
+print("'3' = Test: Sola dön")
+print("'4' = Test: Engel atlama (sol)")
+print("'5' = Test: Engel atlama (sağ)")
+print("'6' = Test: Engel atlama (orta)")
+print("'r' = Simüle pozisyonu sıfırla")
+print("'s' = Dur")
+print("'q' = Çıkış")
 
-def percent(mask, roi_pixels):
-    return float(np.count_nonzero(mask)) / float(roi_pixels + 1e-6)
-
-def majority_vote(history, default='none'):
-    if not history:
-        return default
-    vals, counts = np.unique(history, return_counts=True)
-    return vals[np.argmax(counts)]
+last_nav_update = 0
 
 try:
     while True:
         ok, frame = cap.read()
         if not ok:
-            # kamera kaçar ise dur
-            if time.time() - last_cmd_time > DEADMAN_T:
-                stop_all()
             continue
-
-        # ROI kırp
-        h, w = frame.shape[:2]
-        rw, rh = int(w * ROI_SCALE), int(h * ROI_SCALE)
-        x0 = (w - rw) // 2
-        y0 = (h - rh) // 2
-        roi = frame[y0:y0+rh, x0:x0+rw].copy()
-
-        # hafif blur + HSV
-        roi_blur = cv2.GaussianBlur(roi, (5,5), 0)
-        hsv = cv2.cvtColor(roi_blur, cv2.COLOR_BGR2HSV)
-
-        # V kanalına CLAHE (ışık dengesizliğini toparlar)
-        h_, s_, v_ = cv2.split(hsv)
-        v_eq = clahe.apply(v_)
-        hsv = cv2.merge([h_, s_, v_eq])
-
-        # ——— Maske tanımları (sadece kırmızı ve sarı) ———
-        # Kırmızı (iki aralık), doygunluk ve parlaklık şartlı
-        red1 = cv2.inRange(hsv, (0, 120, 60),  (10, 255, 255))
-        red2 = cv2.inRange(hsv, (170, 120, 60), (180,255, 255))
-        mask_red = cv2.bitwise_or(red1, red2)
-
-        # Sarı (yüksek S ve orta-yüksek V)
-        mask_yel = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
-
-        # morfolojik temizlik
-        k = np.ones((5,5), np.uint8)
-        masks = {
-            'red':   cv2.morphologyEx(mask_red, cv2.MORPH_OPEN, k, iterations=1),
-            'yellow':cv2.morphologyEx(mask_yel, cv2.MORPH_OPEN, k, iterations=1),
-        }
-
-        # oranlar
-        total_px = roi.shape[0] * roi.shape[1]
-        ratios = {c: percent(m, total_px) for c, m in masks.items()}
-
-        # en baskın rengi seç
-        sorted_colors = sorted(ratios.items(), key=lambda x: x[1], reverse=True)
-        top_color, top_ratio = sorted_colors[0]
-        second_ratio = sorted_colors[1][1] if len(sorted_colors) > 1 else 0.0
-
-        chosen = 'none'
-        if top_ratio >= MIN_RATIO and (top_ratio - second_ratio) >= MARGIN:
-            chosen = top_color
-
-        # temporal smoothing
-        last_choices.append(chosen)
-        if len(last_choices) > SMOOTH_N:
-            last_choices.pop(0)
-        stable = majority_vote(last_choices, default='none')
-
-        # ——— Motor komutu ———
-        thr = PWM_STOP
-        steer = PWM_STOP
-
-        if stable in ('red', 'yellow'):
-            # Tek motor çalıştır: miks formülü ile diğer tarafı 1500’e getir
-            T = PWM_FWD
-            T_rel = T - PWM_STOP           # ör. +100
-            if T_rel < 0:
-                T_rel = 0
-            # sağ motoru durdurmak için steer sağa; sol motoru durdurmak için steer sola
-            if mix <= 0:
-                mix = 0.5
-            S_rel = int(round(T_rel / mix))           # PWM ofseti
-            if stable == 'yellow':
-                steer = PWM_STOP - S_rel              # sola çevir → sol yavaşlar, sağ durur
-            else:  # red
-                steer = PWM_STOP + S_rel              # sağa çevir → sağ yavaşlar, sağ durur?  (tersine!)
-                # DİKKAT: ArduRover’da steer sağ (+) iken sağ taraf yavaşlar.
-                # Eğer ters gözlüyorsan steer işaretini değiştir:
-                # steer = PWM_STOP - S_rel
-
-            # Limitler
-            steer = max(1100, min(1900, steer))
-            thr   = T
-
+        
+        # GPS verisi al
+        current_lat, current_lon, current_heading = get_gps_data()
+        
+        if current_lat is not None:
+            # Hedefe olan mesafe ve bearing
+            distance = calculate_distance(current_lat, current_lon, TARGET_LAT, TARGET_LON)
+            target_bearing = calculate_bearing(current_lat, current_lon, TARGET_LAT, TARGET_LON)
+            
+            gps_status = f"Lat:{current_lat:.6f}, Lon:{current_lon:.6f}"
+            distance_status = f"Mesafe: {distance:.1f}m"
+            bearing_status = f"Hedef bearing: {target_bearing:.0f}°, Heading: {current_heading:.0f}°"
         else:
-            thr, steer = PWM_STOP, PWM_STOP
-
-        send_rc(thr, steer)
-        last_cmd_time = time.time()
-
-        # ——— Görsel debug ———
-        if SHOW_WIN:
-            dbg = roi.copy()
-            # metin
-            txt1 = f"top:{top_color} {top_ratio*100:.1f}%  2nd:{second_ratio*100:.1f}%"
-            txt2 = f"stable:{stable.upper()}  THR:{thr}  STR:{steer}"
-            cv2.rectangle(frame, (x0, y0), (x0+rw, y0+rh), (0,255,0), 2)
-            cv2.putText(frame, txt1, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,255,0),2)
-            cv2.putText(frame, txt2, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,255,0),2)
-
-            # küçük mask önizleme (sadece kırmızı ve sarı)
-            small = 160
-            vis = np.zeros((small, small*2, 3), np.uint8)  # 1x2 grid
-            def put_mask(m, pos, label):
-                m3 = cv2.cvtColor(m, cv2.COLOR_GRAY2BGR)
-                m3 = cv2.resize(m3, (small, small))
-                y, x = pos
-                vis[y:y+small, x:x+small] = m3
-                cv2.putText(vis, label, (x+5, y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.6,(255,255,255),1)
-            put_mask(masks['red'],    (0,0),     f"RED {ratios['red']*100:.1f}%")
-            put_mask(masks['yellow'], (0,small), f"YEL {ratios['yellow']*100:.1f}%")
-
-            # yerleştir
-            H = max(frame.shape[0], vis.shape[0]+10)
-            W = frame.shape[1] + vis.shape[1] + 10
-            canvas = np.zeros((H, W, 3), dtype=np.uint8)
-            canvas[:frame.shape[0], :frame.shape[1]] = frame
-            canvas[:vis.shape[0], frame.shape[1]+10:frame.shape[1]+10+vis.shape[1]] = vis
-            cv2.imshow('Color Control (ROI+Masks)', canvas)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        # deadman
-        if time.time() - last_cmd_time > DEADMAN_T:
+            gps_status = "GPS verisi yok"
+            distance_status = "Mesafe: ---"
+            bearing_status = "Bearing: ---"
+            distance = 999
+        
+        # ROI ve engel algılama
+        h, w = frame.shape[:2]
+        rw, rh = int(w * 0.6), int(h * 0.6)
+        x0, y0 = (w - rw) // 2, (h - rh) // 2
+        roi = frame[y0:y0+rh, x0:x0+rw]
+        
+        # Sarı engel algılama
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+        yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
+        
+        # Engel konumu tespit
+        obstacle_position = detect_obstacle_position(roi, mask_yellow)
+        
+        # Engel kontrolü
+        if yellow_ratio > 0.15:
+            if not obstacle_detected:
+                print(f"🚨 ENGEL ALGILANDI! {yellow_ratio*100:.1f}% - Konum: {obstacle_position}")
+                obstacle_detected = True
+        else:
+            if obstacle_detected:
+                print("✅ ENGEL TEMİZLENDİ")
+            obstacle_detected = False
+            # Engel yoksa manevraya son ver
+            if obstacle_avoidance_active:
+                obstacle_avoidance_active = False
+                avoidance_stage = 0
+                print("🔄 ENGEL ATLAMA İPTAL - ENGEL YOK")
+        
+        # Otomatik GPS navigasyon
+        if current_mode == "AUTO_GPS" and current_lat is not None:
+            if time.time() - last_nav_update > 0.5:  # 0.5 saniyede bir güncelle
+                
+                # Önce engel atlama kontrolü
+                if obstacle_detected and yellow_ratio > 0.15:
+                    # Engel atlama manevrası aktif
+                    maneuver_active = obstacle_avoidance_maneuver(obstacle_position)
+                    if maneuver_active:
+                        # Manevra sırasında simüle pozisyonu güncelle
+                        current_rc = vehicle.channels.overrides if hasattr(vehicle, 'channels') else {}
+                        thr = current_rc.get('3', PWM_STOP)
+                        steer = current_rc.get('1', PWM_STOP)
+                        update_simulated_position(thr, steer)
+                        last_nav_update = time.time()
+                        continue  # Normal navigasyona geçme
+                
+                # Normal GPS navigasyon (engel yoksa veya manevra bitmişse)
+                if not obstacle_detected and not obstacle_avoidance_active:
+                    if distance > 2:  # hedefe 2m'den uzaksa
+                        thr, steer = bearing_to_motor_command(target_bearing, current_heading)
+                        send_rc(thr, steer)
+                        update_simulated_position(thr, steer)
+                    else:
+                        stop_all()
+                        print("🎯 HEDEFE VARILDI!")
+                        current_mode = "MANUAL"
+                
+                last_nav_update = time.time()
+        
+        # Görsel
+        cv2.rectangle(frame, (x0, y0), (x0+rw, y0+rh), (0,255,0), 2)
+        
+        # ROI'yi 3 parçaya böl (görsel gösterim için)
+        part_w = rw // 3
+        cv2.line(frame, (x0 + part_w, y0), (x0 + part_w, y0 + rh), (255,255,0), 1)
+        cv2.line(frame, (x0 + 2*part_w, y0), (x0 + 2*part_w, y0 + rh), (255,255,0), 1)
+        
+        # Durum bilgileri
+        status_color = (0,255,0) if current_mode == "MANUAL" else (0,255,255)
+        avoidance_text = " - ENGEL ATLAMA" if obstacle_avoidance_active else ""
+        cv2.putText(frame, f"Mod: {current_mode}{avoidance_text}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
+        cv2.putText(frame, gps_status, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,0), 2)
+        cv2.putText(frame, distance_status, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,255), 2)
+        cv2.putText(frame, bearing_status, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
+        
+        # Engel bilgisi
+        obstacle_color = (0,0,255) if obstacle_detected else (0,255,255)
+        obstacle_info = f"Engel: {yellow_ratio*100:.1f}%"
+        if obstacle_detected:
+            obstacle_info += f" ({obstacle_position})"
+        cv2.putText(frame, obstacle_info, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, obstacle_color, 2)
+        
+        # Engel atlama aşama bilgisi
+        if obstacle_avoidance_active:
+            stage_names = ["", "Yan Hareket", "Düz Git", "Geri Dön"]
+            stage_text = f"Aşama: {stage_names[avoidance_stage]}"
+            cv2.putText(frame, stage_text, (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,100,100), 2)
+        
+        cv2.imshow('GPS Navigation Simulator', frame)
+        
+        # Kontroller
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+        elif key == ord('g'):
+            current_mode = "AUTO_GPS"
+            print("🎯 GPS otomatik modu aktif")
+        elif key == ord('1'):
+            current_mode = "MANUAL"
+            send_rc(PWM_FAST, PWM_STOP)
+            update_simulated_position(PWM_FAST, PWM_STOP)
+            print("➡️ DÜZ GİT")
+        elif key == ord('2'):
+            current_mode = "MANUAL"
+            send_rc(PWM_FAST, PWM_STOP + 100)
+            update_simulated_position(PWM_FAST, PWM_STOP + 100)
+            print("↗️ SAĞA DÖN")
+        elif key == ord('3'):
+            current_mode = "MANUAL"
+            send_rc(PWM_FAST, PWM_STOP - 100)
+            update_simulated_position(PWM_FAST, PWM_STOP - 100)
+            print("↖️ SOLA DÖN")
+        elif key == ord('4'):
+            # Sol engel atlama testi
+            current_mode = "MANUAL"
+            obstacle_detected = True
+            obstacle_avoidance_maneuver("left")
+            print("🧪 TEST: Sol engel atlama")
+        elif key == ord('5'):
+            # Sağ engel atlama testi
+            current_mode = "MANUAL"
+            obstacle_detected = True
+            obstacle_avoidance_maneuver("right")
+            print("🧪 TEST: Sağ engel atlama")
+        elif key == ord('6'):
+            # Orta engel atlama testi
+            current_mode = "MANUAL"
+            obstacle_detected = True
+            obstacle_avoidance_maneuver("center")
+            print("🧪 TEST: Orta engel atlama")
+        elif key == ord('r'):
+            # Pozisyonu sıfırla
+            sim_lat = 41.0080
+            sim_lon = 28.9780
+            sim_heading = 45
+            print("🔄 Simüle pozisyon sıfırlandı")
+        elif key == ord('s'):
+            current_mode = "MANUAL"
             stop_all()
-
-        time.sleep(0.03)
+            print("⏹️ DUR")
 
 except KeyboardInterrupt:
     pass
 finally:
-    print("\n▶ Override temizleniyor ve disarm …")
+    print("\n▶ Kapatılıyor...")
+    stop_all()
     vehicle.channels.overrides = {}
     try:
         vehicle.armed = False
-    except Exception:
+    except:
         pass
     vehicle.close()
     cap.release()
-    if SHOW_WIN:
-        cv2.destroyAllWindows()
-    print("✅ Renk kontrolü sonlandı.")
+    cv2.destroyAllWindows()
+    print("✅ Tamamlandı")

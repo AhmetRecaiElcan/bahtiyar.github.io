@@ -25,8 +25,8 @@ import argparse
 
 
 # —————————————————— Kullanıcı ayarları ——————————————————
-CONNECTION = 'COM18'        # Örn: 'COM5' ya da 'udp:127.0.0.1:14550'
-BAUD       = 57600
+CONNECTION = 'COM17'        # Örn: 'COM5' ya da 'udp:127.0.0.1:14550'
+BAUD       = 115200
 CAM_INDEX  = 0
 SHOW_WIN   = True
 CONNECTION_TIMEOUT = 60

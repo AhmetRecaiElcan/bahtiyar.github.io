@@ -44,8 +44,8 @@ PWM_NORMAL = 1700       # normal ileri (hızlandırıldı)
 PWM_FAST   = 1800       # hızlı ileri (hızlandırıldı)
 
 # Navigasyon ayarları
-TARGET_LAT = 40.7710894  # Hedef koordinat - Mission Planner'dan alınan
-TARGET_LON = 29.4372419  # Hedef koordinat - Mission Planner'dan alınan
+TARGET_LAT = 40.7712335  # Hedef koordinat - Mission Planner'dan alınan
+TARGET_LON = 29.4375378  # Hedef koordinat - Mission Planner'dan alınan
 ARRIVAL_RADIUS = 2.0     # metre - hedefe bu kadar yaklaşınca "vardı" say
 GPS_UPDATE_RATE = 1.0   # saniye - GPS kontrolü
 
