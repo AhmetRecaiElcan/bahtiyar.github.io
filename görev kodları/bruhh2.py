@@ -45,8 +45,8 @@ STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; F
 
 # RAL 1026 (Luminous Yellow) HSV aralığı – OpenCV (H:0-179, S/V:0-255)
 # Not: Aydınlatma/kamera WB değişimine göre bu eşikleri gerektiğinde daraltıp/genişletin.
-RAL1026_HSV_LOW  = (25, 150, 170)
-RAL1026_HSV_HIGH = (38, 255, 255)
+RAL1026_HSV_LOW  = (24, 110, 150)
+RAL1026_HSV_HIGH = (42, 255, 255)
 
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
