@@ -25,6 +25,7 @@ from dronekit import connect, VehicleMode
 CONNECTION = 'COM17'
 BAUD = 115200
 CAM_INDEX = 0
+CAMERA_MIRRORED = False  # Kamera görüntüsü yatay ayna ise True yap (sol/sağ tersse)
 
 # PWM değerleri
 PWM_STOP = 1500
@@ -40,7 +41,7 @@ STEER_OFFSET_MAX = 420         # 350 → 420: maksimum kırma arttı
 HARD_TURN_THRESHOLD_DEG = 20   # 35 → 20: erken saturasyon
 TURN_THROTTLE_REDUCTION = 0    # keskin dönüşte gaz azaltma devre dışı
 FAST_TURN_THRESHOLD_DEG = 12   # bunun üzerindeki hatada direksiyonu tam kilide yakın yap
-STEER_RIGHT_IS_PWM_HIGH = False # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
+STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
 
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
@@ -115,19 +116,19 @@ def obstacle_avoidance_maneuver(obstacle_position):
     elapsed = current_time - avoidance_start_time
     
     if avoidance_stage == 1:  # Yan hareket (2 saniye)
+        steer_dir = None
         if obstacle_position == "left":
-            # Sol engel -> sağa git
-            send_rc(PWM_TURN, PWM_STOP + 120)  # sağa dön
-            print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
+            # Sol engel -> sağa kır (engelden uzaklaş)
+            steer_dir = 'right'
         elif obstacle_position == "right":
-            # Sağ engel -> sola git  
-            send_rc(PWM_TURN, PWM_STOP - 120)  # sola dön
-            print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
+            # Sağ engel -> sola kır
+            steer_dir = 'left'
         else:  # center
             # Orta engel -> rastgele tarafa kaç
-            direction = 1 if (current_time % 2) > 1 else -1
-            send_rc(PWM_TURN, PWM_STOP + (120 * direction))
-            print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
+            steer_dir = 'right' if (current_time % 2) > 1 else 'left'
+        steer_cmd = steer_pwm_for_direction(steer_dir, 120)
+        send_rc(PWM_TURN, steer_cmd)
+        print(f"↪️ ENGEL ATLAMA - {steer_dir.upper()} KIRIP KAÇIYOR")
         
         if elapsed > 2.0:  # 2 saniye yan hareket
             avoidance_stage = 2
@@ -143,18 +144,14 @@ def obstacle_avoidance_maneuver(obstacle_position):
             
     elif avoidance_stage == 3:  # Geri dön (1.5 saniye)
         if obstacle_position == "left":
-            # Sola geri dön
-            send_rc(PWM_TURN, PWM_STOP - 100)
-            print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
+            steer_dir = 'left'
         elif obstacle_position == "right":
-            # Sağa geri dön
-            send_rc(PWM_TURN, PWM_STOP + 100)
-            print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
-        else:  # center
-            # Ters yöne geri dön
-            direction = -1 if (current_time % 2) > 1 else 1
-            send_rc(PWM_TURN, PWM_STOP + (100 * direction))
-            print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
+            steer_dir = 'right'
+        else:
+            steer_dir = 'left' if (current_time % 2) > 1 else 'right'
+        steer_cmd = steer_pwm_for_direction(steer_dir, 100)
+        send_rc(PWM_TURN, steer_cmd)
+        print(f"↩️ ENGEL ATLAMA - {steer_dir.upper()}A GERİ DÖNÜYOR")
         
         if elapsed > 1.5:  # 1.5 saniye geri dön
             # Manevra tamamlandı
@@ -373,7 +370,11 @@ try:
         yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
         
         # Engel konumu tespit
-        obstacle_position = detect_obstacle_position(roi, mask_yellow)
+        raw_pos = detect_obstacle_position(roi, mask_yellow)
+        if CAMERA_MIRRORED:
+            obstacle_position = 'left' if raw_pos == 'right' else ('right' if raw_pos == 'left' else raw_pos)
+        else:
+            obstacle_position = raw_pos
         
         # Engel kontrolü
         if yellow_ratio > 0.15:
