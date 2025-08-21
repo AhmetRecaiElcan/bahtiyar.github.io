@@ -40,7 +40,7 @@ STEER_OFFSET_MAX = 420         # 350 → 420: maksimum kırma arttı
 HARD_TURN_THRESHOLD_DEG = 20   # 35 → 20: erken saturasyon
 TURN_THROTTLE_REDUCTION = 0    # keskin dönüşte gaz azaltma devre dışı
 FAST_TURN_THRESHOLD_DEG = 12   # bunun üzerindeki hatada direksiyonu tam kilide yakın yap
-STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
+STEER_RIGHT_IS_PWM_HIGH = False # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
 
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
