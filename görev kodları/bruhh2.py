@@ -43,6 +43,11 @@ TURN_THROTTLE_REDUCTION = 0    # keskin dönüşte gaz azaltma devre dışı
 FAST_TURN_THRESHOLD_DEG = 12   # bunun üzerindeki hatada direksiyonu tam kilide yakın yap
 STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
 
+# RAL 1026 (Luminous Yellow) HSV aralığı – OpenCV (H:0-179, S/V:0-255)
+# Not: Aydınlatma/kamera WB değişimine göre bu eşikleri gerektiğinde daraltıp/genişletin.
+RAL1026_HSV_LOW  = (25, 150, 170)
+RAL1026_HSV_HIGH = (38, 255, 255)
+
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
 TARGET_LON = 29.4375378   # Mission Planner hedef
@@ -364,9 +369,9 @@ try:
         x0, y0 = (w - rw) // 2, (h - rh) // 2
         roi = frame[y0:y0+rh, x0:x0+rw]
         
-        # Sarı engel algılama
+        # Sarı engel algılama (RAL 1026 – fluoresan sarı)
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+        mask_yellow = cv2.inRange(hsv, RAL1026_HSV_LOW, RAL1026_HSV_HIGH)
         yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
         
         # Engel konumu tespit
