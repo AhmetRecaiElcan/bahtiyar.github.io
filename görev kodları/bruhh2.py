@@ -25,7 +25,7 @@ from dronekit import connect, VehicleMode
 CONNECTION = 'COM17'
 BAUD = 115200
 CAM_INDEX = 0
-CAMERA_MIRRORED = False  # Kamera görüntüsü yatay ayna ise True yap (sol/sağ tersse)
+CAMERA_MIRRORED = True  # Kamera görüntüsü yatay ayna ise True yap (sol/sağ tersse)
 
 # PWM değerleri
 PWM_STOP = 1500
