@@ -23,6 +23,15 @@ CAM_INDEX = 0
 PWM_STOP = 1500
 PWM_FAST = 1800
 
+# Dönüş keskinliği ayarları (normal GPS navigasyon için)
+# Deadzone küçültüldü, kazanç ve limit eklendi
+TURN_DEADZONE_DEG = 6          # 15 → 6 derece: daha erken dönmeye başla
+STEER_GAIN_DEG2PWM = 6.0       # 2 → 6: açı hatasını daha agresif PWM'e çevir
+STEER_OFFSET_MIN = 70          # küçük hatalarda dahi en az bu kadar kır
+STEER_OFFSET_MAX = 350         # direksiyon maksimum ofset (1100-1900 limitlerine saygılı)
+HARD_TURN_THRESHOLD_DEG = 35   # büyük açı hatası: tam kilide yakın dön
+TURN_THROTTLE_REDUCTION = 120  # keskin dönerken gazı biraz azalt
+
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
 TARGET_LON = 29.4375378   # Mission Planner hedef
@@ -171,20 +180,31 @@ def bearing_to_motor_command(target_bearing, current_heading):
         bearing_diff += 360
     
     print(f"🧭 Hedef: {target_bearing:.0f}°, Mevcut: {current_heading:.0f}°, Fark: {bearing_diff:.0f}°")
-    
-    if abs(bearing_diff) < 15:  # düz git
+
+    abs_err = abs(bearing_diff)
+
+    if abs_err < TURN_DEADZONE_DEG:
         thr, steer = PWM_FAST, PWM_STOP
-        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer}")
-    elif bearing_diff > 0:  # sağa dön
-        steer_offset = min(150, abs(bearing_diff) * 2)
-        thr = PWM_FAST
-        steer = PWM_STOP - steer_offset  # TERS: test için
-        print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
-    else:  # sola dön
-        steer_offset = min(150, abs(bearing_diff) * 2)
-        thr = PWM_FAST
-        steer = PWM_STOP + steer_offset  # TERS: test için
-        print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
+        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer} (deadzone {TURN_DEADZONE_DEG}°)")
+    else:
+        # Agresif direksiyon: min ofset + kazanç, büyük hatalarda hızlı saturasyon
+        if abs_err >= HARD_TURN_THRESHOLD_DEG:
+            steer_offset = STEER_OFFSET_MAX
+        else:
+            steer_offset = int(max(
+                STEER_OFFSET_MIN,
+                min(STEER_OFFSET_MAX, abs_err * STEER_GAIN_DEG2PWM)
+            ))
+
+        # Keskin dönerken gazı bir miktar azalt
+        thr = max(PWM_STOP, PWM_FAST - TURN_THROTTLE_REDUCTION if abs_err >= 20 else PWM_FAST)
+
+        if bearing_diff > 0:  # sağa dön
+            steer = PWM_STOP - steer_offset  # TERS: donanım yönüne uygun
+            print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
+        else:  # sola dön
+            steer = PWM_STOP + steer_offset  # TERS: donanım yönüne uygun
+            print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
     
     return thr, steer
 
