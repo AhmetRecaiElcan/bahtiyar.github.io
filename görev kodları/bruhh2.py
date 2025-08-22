@@ -47,6 +47,13 @@ STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; F
 RAL1026_HSV_LOW  = (24, 110, 150)
 RAL1026_HSV_HIGH = (42, 255, 255)
 
+# Engel algılamayı aç/kapat ve eşik
+OBSTACLE_ENABLE = False           # GPS doğruluk testi için varsayılan kapalı
+YELLOW_RATIO_THRESHOLD = 0.22     # 0.15 → 0.22: sahte pozitifleri azalt
+
+# Direksiyon yumuşatma (salınım azaltma)
+SMOOTH_STEER_ALPHA = 0.6          # 0..1 (yüksekse daha az yumuşatma)
+
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
 TARGET_LON = 29.4375378   # Mission Planner hedef
@@ -63,6 +70,7 @@ obstacle_detected = False
 obstacle_avoidance_active = False
 avoidance_start_time = 0
 avoidance_stage = 0  # 0: normal, 1: yan hareket, 2: düz git, 3: geri dön
+last_steer_pwm = PWM_STOP
 
 def steer_pwm_for_direction(direction: str, offset_pwm: int) -> int:
     """Yön bayrağına göre sağ/sol için PWM hesapla.
@@ -380,8 +388,8 @@ try:
         else:
             obstacle_position = raw_pos
         
-        # Engel kontrolü
-        if yellow_ratio > 0.15:
+        # Engel kontrolü (opsiyonel)
+        if OBSTACLE_ENABLE and yellow_ratio > YELLOW_RATIO_THRESHOLD:
             if not obstacle_detected:
                 print(f"🚨 ENGEL ALGILANDI! {yellow_ratio*100:.1f}% - Konum: {obstacle_position}")
                 obstacle_detected = True
@@ -400,7 +408,7 @@ try:
             if time.time() - last_nav_update > 0.5:  # 0.5 saniyede bir güncelle
                 
                 # Önce engel atlama kontrolü
-                if obstacle_detected and yellow_ratio > 0.15:
+                if obstacle_detected and yellow_ratio > YELLOW_RATIO_THRESHOLD:
                     # Engel atlama manevrası aktif
                     maneuver_active = obstacle_avoidance_maneuver(obstacle_position)
                     if maneuver_active:
@@ -416,6 +424,9 @@ try:
                 if not obstacle_detected and not obstacle_avoidance_active:
                     if distance > 2:  # hedefe 2m'den uzaksa
                         thr, steer = bearing_to_motor_command(target_bearing, current_heading)
+                        # Direksiyon yumuşatma
+                        steer = int(last_steer_pwm * (1.0 - SMOOTH_STEER_ALPHA) + steer * SMOOTH_STEER_ALPHA)
+                        last_steer_pwm = steer
                         send_rc(thr, steer)
                         update_simulated_position(thr, steer)
                     else:
