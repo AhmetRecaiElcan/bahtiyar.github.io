@@ -176,12 +176,12 @@ def bearing_to_motor_command(target_bearing, current_heading):
         thr, steer = PWM_FAST, PWM_STOP
         print(f"➡️ DÜZ GİT: THR={thr}, STR={steer}")
     elif bearing_diff > 0:  # sağa dön
-        steer_offset = min(120, abs(bearing_diff) * 1.5)  # kazanç azaltıldı
+        steer_offset = min(180, abs(bearing_diff) * 2.2)  # kazanç artırıldı
         thr = PWM_FAST
         steer = PWM_STOP - steer_offset  # TERS: test için
         print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
     else:  # sola dön
-        steer_offset = min(120, abs(bearing_diff) * 1.5)  # kazanç azaltıldı
+        steer_offset = min(180, abs(bearing_diff) * 2.2)  # kazanç artırıldı
         thr = PWM_FAST
         steer = PWM_STOP + steer_offset  # TERS: test için
         print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
