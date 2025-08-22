@@ -12,47 +12,16 @@ import time
 import math
 import cv2
 import numpy as np
-
-# Python 3.10+ uyumluluğu: bazı paketler collections.MutableMapping bekler
-import collections as _collections
-import collections.abc as _collections_abc
-if not hasattr(_collections, 'MutableMapping'):
-    _collections.MutableMapping = _collections_abc.MutableMapping
-
 from dronekit import connect, VehicleMode
 
 # Ayarlar
-CONNECTION = 'COM17'
-BAUD = 115200
+CONNECTION = 'COM18'
+BAUD = 54600
 CAM_INDEX = 0
-CAMERA_MIRRORED = True  # Kamera görüntüsü yatay ayna ise True yap (sol/sağ tersse)
 
 # PWM değerleri
 PWM_STOP = 1500
 PWM_FAST = 1800
-PWM_TURN = 1900  # Dönüş anlarında daha yüksek gaz
-
-# GPS navigasyon için salınım önleyici ayarlar
-TURN_DEADZONE_DEG = 8          # 2 → 8 derece: daha geniş deadzone
-STEER_GAIN_DEG2PWM = 4.0       # 10 → 4: daha yumuşak kazanç
-STEER_OFFSET_MIN = 60          # 110 → 60: küçük hatalarda daha az kırma
-STEER_OFFSET_MAX = 280         # 420 → 280: maksimum kırma azaltıldı
-HARD_TURN_THRESHOLD_DEG = 35   # 20 → 35: daha geç saturasyon
-TURN_THROTTLE_REDUCTION = 0    # keskin dönüşte gaz azaltma devre dışı
-FAST_TURN_THRESHOLD_DEG = 25   # 12 → 25: daha geç tam kilit
-STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
-
-# RAL 1026 (Luminous Yellow) HSV aralığı – OpenCV (H:0-179, S/V:0-255)
-# Not: Aydınlatma/kamera WB değişimine göre bu eşikleri gerektiğinde daraltıp/genişletin.
-RAL1026_HSV_LOW  = (24, 110, 150)
-RAL1026_HSV_HIGH = (42, 255, 255)
-
-# Engel algılamayı aç/kapat ve eşik
-OBSTACLE_ENABLE = False           # GPS doğruluk testi için varsayılan kapalı
-YELLOW_RATIO_THRESHOLD = 0.22     # 0.15 → 0.22: sahte pozitifleri azalt
-
-# Direksiyon yumuşatma (salınım azaltma)
-SMOOTH_STEER_ALPHA = 0.6          # 0..1 (yüksekse daha az yumuşatma)
 
 # Hedef koordinat
 TARGET_LAT = 40.7712335   # Mission Planner hedef
@@ -70,19 +39,6 @@ obstacle_detected = False
 obstacle_avoidance_active = False
 avoidance_start_time = 0
 avoidance_stage = 0  # 0: normal, 1: yan hareket, 2: düz git, 3: geri dön
-last_steer_pwm = PWM_STOP
-
-def steer_pwm_for_direction(direction: str, offset_pwm: int) -> int:
-    """Yön bayrağına göre sağ/sol için PWM hesapla.
-    direction: 'right' | 'left'
-    offset_pwm: PWM_STOP'tan sapma miktarı (pozitif)
-    """
-    offset_pwm = int(abs(offset_pwm))
-    if direction == 'right':
-        signed = offset_pwm if STEER_RIGHT_IS_PWM_HIGH else -offset_pwm
-    else:  # 'left'
-        signed = -offset_pwm if STEER_RIGHT_IS_PWM_HIGH else offset_pwm
-    return PWM_STOP + signed
 
 def detect_obstacle_position(roi, mask_yellow):
     """Engelin konumunu belirle (sol, orta, sağ)"""
@@ -128,19 +84,19 @@ def obstacle_avoidance_maneuver(obstacle_position):
     elapsed = current_time - avoidance_start_time
     
     if avoidance_stage == 1:  # Yan hareket (2 saniye)
-        steer_dir = None
         if obstacle_position == "left":
-            # Sol engel -> sağa kır (engelden uzaklaş)
-            steer_dir = 'right'
+            # Sol engel -> sağa git
+            send_rc(PWM_FAST, PWM_STOP + 120)  # sağa dön
+            print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
         elif obstacle_position == "right":
-            # Sağ engel -> sola kır
-            steer_dir = 'left'
+            # Sağ engel -> sola git  
+            send_rc(PWM_FAST, PWM_STOP - 120)  # sola dön
+            print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
         else:  # center
             # Orta engel -> rastgele tarafa kaç
-            steer_dir = 'right' if (current_time % 2) > 1 else 'left'
-        steer_cmd = steer_pwm_for_direction(steer_dir, 120)
-        send_rc(PWM_TURN, steer_cmd)
-        print(f"↪️ ENGEL ATLAMA - {steer_dir.upper()} KIRIP KAÇIYOR")
+            direction = 1 if (current_time % 2) > 1 else -1
+            send_rc(PWM_FAST, PWM_STOP + (120 * direction))
+            print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
         
         if elapsed > 2.0:  # 2 saniye yan hareket
             avoidance_stage = 2
@@ -156,14 +112,18 @@ def obstacle_avoidance_maneuver(obstacle_position):
             
     elif avoidance_stage == 3:  # Geri dön (1.5 saniye)
         if obstacle_position == "left":
-            steer_dir = 'left'
+            # Sola geri dön
+            send_rc(PWM_FAST, PWM_STOP - 100)
+            print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
         elif obstacle_position == "right":
-            steer_dir = 'right'
-        else:
-            steer_dir = 'left' if (current_time % 2) > 1 else 'right'
-        steer_cmd = steer_pwm_for_direction(steer_dir, 100)
-        send_rc(PWM_TURN, steer_cmd)
-        print(f"↩️ ENGEL ATLAMA - {steer_dir.upper()}A GERİ DÖNÜYOR")
+            # Sağa geri dön
+            send_rc(PWM_FAST, PWM_STOP + 100)
+            print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
+        else:  # center
+            # Ters yöne geri dön
+            direction = -1 if (current_time % 2) > 1 else 1
+            send_rc(PWM_FAST, PWM_STOP + (100 * direction))
+            print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
         
         if elapsed > 1.5:  # 1.5 saniye geri dön
             # Manevra tamamlandı
@@ -211,38 +171,20 @@ def bearing_to_motor_command(target_bearing, current_heading):
         bearing_diff += 360
     
     print(f"🧭 Hedef: {target_bearing:.0f}°, Mevcut: {current_heading:.0f}°, Fark: {bearing_diff:.0f}°")
-
-    abs_err = abs(bearing_diff)
-
-    if abs_err < TURN_DEADZONE_DEG:
+    
+    if abs(bearing_diff) < 25:  # düz git (deadzone artırıldı)
         thr, steer = PWM_FAST, PWM_STOP
-        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer} (deadzone {TURN_DEADZONE_DEG}°)")
-    else:
-        # Agresif direksiyon: min ofset + kazanç, büyük hatalarda hızlı saturasyon
-        if abs_err >= HARD_TURN_THRESHOLD_DEG:
-            steer_offset = STEER_OFFSET_MAX
-        else:
-            steer_offset = int(max(
-                STEER_OFFSET_MIN,
-                min(STEER_OFFSET_MAX, abs_err * STEER_GAIN_DEG2PWM)
-            ))
-
-        # Büyük hata için neredeyse tam kilit uygula
-        if abs_err >= FAST_TURN_THRESHOLD_DEG:
-            steer_offset = STEER_OFFSET_MAX
-
-        # Dönüşte gazı artır
-        thr = PWM_TURN
-
-        # Yön işaretini tek bayrakla yönet
-        if bearing_diff > 0:  # hedef sağda
-            signed = steer_offset if STEER_RIGHT_IS_PWM_HIGH else -steer_offset
-            steer = PWM_STOP + signed
-            print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: {signed:+d})")
-        else:  # hedef solda
-            signed = -steer_offset if STEER_RIGHT_IS_PWM_HIGH else steer_offset
-            steer = PWM_STOP + signed
-            print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: {signed:+d})")
+        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer}")
+    elif bearing_diff > 0:  # sağa dön
+        steer_offset = min(120, abs(bearing_diff) * 1.5)  # kazanç azaltıldı
+        thr = PWM_FAST
+        steer = PWM_STOP - steer_offset  # TERS: test için
+        print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
+    else:  # sola dön
+        steer_offset = min(120, abs(bearing_diff) * 1.5)  # kazanç azaltıldı
+        thr = PWM_FAST
+        steer = PWM_STOP + steer_offset  # TERS: test için
+        print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
     
     return thr, steer
 
@@ -290,10 +232,10 @@ def update_simulated_position(thr, steer):
     # Motor komutlarına göre pozisyon değişimi simüle et
     if thr > PWM_STOP:  # ileri gidiyoruz
         # Heading değişimi (steering'e göre)
-        if steer > PWM_STOP + 20:  # sağa dönüş (PWM yüksek -> sağ mı?)
-            sim_heading += 2 if STEER_RIGHT_IS_PWM_HIGH else -2
+        if steer > PWM_STOP + 20:  # sağa dönüş
+            sim_heading += 2
         elif steer < PWM_STOP - 20:  # sola dönüş
-            sim_heading -= 2 if STEER_RIGHT_IS_PWM_HIGH else +2
+            sim_heading -= 2
         
         sim_heading = (sim_heading + 360) % 360
         
@@ -303,7 +245,7 @@ def update_simulated_position(thr, steer):
         sim_lon += speed_factor * math.sin(math.radians(sim_heading))
 
 # Bağlantı
-print("▶ Bağlanılıyor...")
+print("▶️ Bağlanılıyor...")
 try:
     vehicle = connect(CONNECTION, baud=BAUD, wait_ready=False, timeout=30)
     vehicle.mode = VehicleMode("MANUAL")
@@ -376,20 +318,16 @@ try:
         x0, y0 = (w - rw) // 2, (h - rh) // 2
         roi = frame[y0:y0+rh, x0:x0+rw]
         
-        # Sarı engel algılama (RAL 1026 – fluoresan sarı)
+        # Sarı engel algılama
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mask_yellow = cv2.inRange(hsv, RAL1026_HSV_LOW, RAL1026_HSV_HIGH)
+        mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
         yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
         
         # Engel konumu tespit
-        raw_pos = detect_obstacle_position(roi, mask_yellow)
-        if CAMERA_MIRRORED:
-            obstacle_position = 'left' if raw_pos == 'right' else ('right' if raw_pos == 'left' else raw_pos)
-        else:
-            obstacle_position = raw_pos
+        obstacle_position = detect_obstacle_position(roi, mask_yellow)
         
-        # Engel kontrolü (opsiyonel)
-        if OBSTACLE_ENABLE and yellow_ratio > YELLOW_RATIO_THRESHOLD:
+        # Engel kontrolü
+        if yellow_ratio > 0.15:
             if not obstacle_detected:
                 print(f"🚨 ENGEL ALGILANDI! {yellow_ratio*100:.1f}% - Konum: {obstacle_position}")
                 obstacle_detected = True
@@ -408,7 +346,7 @@ try:
             if time.time() - last_nav_update > 0.5:  # 0.5 saniyede bir güncelle
                 
                 # Önce engel atlama kontrolü
-                if obstacle_detected and yellow_ratio > YELLOW_RATIO_THRESHOLD:
+                if obstacle_detected and yellow_ratio > 0.15:
                     # Engel atlama manevrası aktif
                     maneuver_active = obstacle_avoidance_maneuver(obstacle_position)
                     if maneuver_active:
@@ -424,9 +362,6 @@ try:
                 if not obstacle_detected and not obstacle_avoidance_active:
                     if distance > 2:  # hedefe 2m'den uzaksa
                         thr, steer = bearing_to_motor_command(target_bearing, current_heading)
-                        # Direksiyon yumuşatma
-                        steer = int(last_steer_pwm * (1.0 - SMOOTH_STEER_ALPHA) + steer * SMOOTH_STEER_ALPHA)
-                        last_steer_pwm = steer
                         send_rc(thr, steer)
                         update_simulated_position(thr, steer)
                     else:
@@ -481,16 +416,14 @@ try:
             print("➡️ DÜZ GİT")
         elif key == ord('2'):
             current_mode = "MANUAL"
-            steer_cmd = steer_pwm_for_direction('right', 200)
-            send_rc(PWM_FAST, steer_cmd)
-            update_simulated_position(PWM_FAST, steer_cmd)
-            print("↗️ SAĞA DÖN (manuel)")
+            send_rc(PWM_FAST, PWM_STOP + 100)
+            update_simulated_position(PWM_FAST, PWM_STOP + 100)
+            print("↗️ SAĞA DÖN")
         elif key == ord('3'):
             current_mode = "MANUAL"
-            steer_cmd = steer_pwm_for_direction('left', 200)
-            send_rc(PWM_FAST, steer_cmd)
-            update_simulated_position(PWM_FAST, steer_cmd)
-            print("↖️ SOLA DÖN (manuel)")
+            send_rc(PWM_FAST, PWM_STOP - 100)
+            update_simulated_position(PWM_FAST, PWM_STOP - 100)
+            print("↖️ SOLA DÖN")
         elif key == ord('4'):
             # Sol engel atlama testi
             current_mode = "MANUAL"
@@ -523,7 +456,7 @@ try:
 except KeyboardInterrupt:
     pass
 finally:
-    print("\n▶ Kapatılıyor...")
+    print("\n▶️ Kapatılıyor...")
     stop_all()
     vehicle.channels.overrides = {}
     try:
