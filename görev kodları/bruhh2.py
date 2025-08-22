@@ -32,15 +32,14 @@ PWM_STOP = 1500
 PWM_FAST = 1800
 PWM_TURN = 1900  # Dönüş anlarında daha yüksek gaz
 
-# Dönüş keskinliği ayarları (normal GPS navigasyon için)
-# Daha agresif ve doğru yön işaretli direksiyon kontrolü
-TURN_DEADZONE_DEG = 2          # 6 → 2 derece
-STEER_GAIN_DEG2PWM = 10.0      # 6 → 10: daha agresif dönüş
-STEER_OFFSET_MIN = 110         # 70 → 110: küçük hatada bile belirgin kırma
-STEER_OFFSET_MAX = 420         # 350 → 420: maksimum kırma arttı
-HARD_TURN_THRESHOLD_DEG = 20   # 35 → 20: erken saturasyon
+# GPS navigasyon için salınım önleyici ayarlar
+TURN_DEADZONE_DEG = 8          # 2 → 8 derece: daha geniş deadzone
+STEER_GAIN_DEG2PWM = 4.0       # 10 → 4: daha yumuşak kazanç
+STEER_OFFSET_MIN = 60          # 110 → 60: küçük hatalarda daha az kırma
+STEER_OFFSET_MAX = 280         # 420 → 280: maksimum kırma azaltıldı
+HARD_TURN_THRESHOLD_DEG = 35   # 20 → 35: daha geç saturasyon
 TURN_THROTTLE_REDUCTION = 0    # keskin dönüşte gaz azaltma devre dışı
-FAST_TURN_THRESHOLD_DEG = 12   # bunun üzerindeki hatada direksiyonu tam kilide yakın yap
+FAST_TURN_THRESHOLD_DEG = 25   # 12 → 25: daha geç tam kilit
 STEER_RIGHT_IS_PWM_HIGH = True # True: sağ kırmak için PWM_STOP'tan YUKARI; False ise AŞAĞI
 
 # RAL 1026 (Luminous Yellow) HSV aralığı – OpenCV (H:0-179, S/V:0-255)
