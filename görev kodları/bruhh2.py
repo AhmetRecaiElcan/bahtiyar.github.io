@@ -24,8 +24,8 @@ PWM_STOP = 1500
 PWM_FAST = 1800
 
 # Hedef koordinat
-TARGET_LAT = 40.7712335   # Mission Planner hedef
-TARGET_LON = 29.4375378   # Mission Planner hedef
+TARGET_LAT = 40.777326   # Mission Planner hedef
+TARGET_LON = 29.646993   # Mission Planner hedef
 
 # Simüle GPS (test için)
 SIMULATE_GPS = False   # True = sahte GPS kullan, False = gerçek GPS
