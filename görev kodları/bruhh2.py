@@ -59,7 +59,7 @@ def detect_obstacle_position(roi, mask_yellow):
     # En yoğun bölgeyi bul
     max_density = max(left_density, center_density, right_density)
     
-    if max_density < 0.05:  # çok az engel
+    if max_density < 0.02:  # eşik düşürüldü (0.05 → 0.02)
         return "none"
     elif left_density == max_density:
         return "left"
