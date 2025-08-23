@@ -931,3 +931,35 @@ document.addEventListener = function(event, handler) {
     }
     return originalDOMContentLoaded.call(this, event, handler);
 };
+
+// GPS Navigation çalıştırma fonksiyonu
+function runGPSNavigation() {
+    addLogEntry("🚀 GPS Navigasyon başlatılıyor...");
+    
+    // Terminal komutu çalıştır - dinamik yol
+    const currentPath = window.location.pathname;
+    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+    const command = `cd "${basePath}" && python3 "görev kodları/bruhh2.py"`;
+    
+    // Web sayfasından terminal komutu çalıştırmak için fetch API kullan
+    fetch('/run-gps', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command: command })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addLogEntry("✅ GPS Navigasyon başarıyla başlatıldı");
+        } else {
+            addLogEntry("❌ GPS Navigasyon başlatılamadı: " + data.error);
+        }
+    })
+    .catch(error => {
+        addLogEntry("❌ Hata: " + error.message);
+        // Fallback: alert ile bilgi ver
+        alert("GPS Navigasyon başlatılıyor...\n\nTerminal'de şu komutu çalıştırın:\n" + command);
+    });
+}
