@@ -86,16 +86,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
     if avoidance_stage == 1:  # Yan hareket (2 saniye)
         if obstacle_position == "left":
             # Sol engel -> sağa git
-            send_rc(PWM_FAST, PWM_STOP + 120)  # sağa dön
+            send_rc(PWM_FAST, PWM_STOP + 200)  # sağa dön (120 → 200)
             print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
         elif obstacle_position == "right":
             # Sağ engel -> sola git  
-            send_rc(PWM_FAST, PWM_STOP - 120)  # sola dön
+            send_rc(PWM_FAST, PWM_STOP - 200)  # sola dön (120 → 200)
             print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
         else:  # center
             # Orta engel -> rastgele tarafa kaç
             direction = 1 if (current_time % 2) > 1 else -1
-            send_rc(PWM_FAST, PWM_STOP + (120 * direction))
+            send_rc(PWM_FAST, PWM_STOP + (200 * direction))
             print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
         
         if elapsed > 2.0:  # 2 saniye yan hareket
@@ -113,16 +113,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
     elif avoidance_stage == 3:  # Geri dön (1.5 saniye)
         if obstacle_position == "left":
             # Sola geri dön
-            send_rc(PWM_FAST, PWM_STOP - 100)
+            send_rc(PWM_FAST, PWM_STOP - 180)  # 100 → 180
             print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
         elif obstacle_position == "right":
             # Sağa geri dön
-            send_rc(PWM_FAST, PWM_STOP + 100)
+            send_rc(PWM_FAST, PWM_STOP + 180)  # 100 → 180
             print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
         else:  # center
             # Ters yöne geri dön
             direction = -1 if (current_time % 2) > 1 else 1
-            send_rc(PWM_FAST, PWM_STOP + (100 * direction))
+            send_rc(PWM_FAST, PWM_STOP + (180 * direction))
             print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
         
         if elapsed > 1.5:  # 1.5 saniye geri dön
@@ -346,8 +346,15 @@ try:
             if time.time() - last_nav_update > 0.5:  # 0.5 saniyede bir güncelle
                 
                 # Önce engel atlama kontrolü
-                if obstacle_detected and yellow_ratio > 0.15:
-                    # Engel atlama manevrası aktif
+                if obstacle_detected and yellow_ratio > 0.15 and not obstacle_avoidance_active:
+                    # Engel atlama manevrası başlat
+                    print(f"🚨 ENGEL ALGILANDI! Manevra başlatılıyor...")
+                    obstacle_avoidance_maneuver(obstacle_position)
+                    last_nav_update = time.time()
+                    continue  # Manevra sırasında GPS navigasyonu devre dışı
+                
+                # Engel atlama aktifse sadece manevrayı çalıştır
+                if obstacle_avoidance_active:
                     maneuver_active = obstacle_avoidance_maneuver(obstacle_position)
                     if maneuver_active:
                         # Manevra sırasında simüle pozisyonu güncelle
