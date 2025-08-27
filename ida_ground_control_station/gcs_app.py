@@ -56,6 +56,10 @@ class GCSApp(QWidget):
         self.is_connected = False
         self.waypoints = []
         self.current_heading = 0
+        self.gorev2_process = None
+        self.gorev2_running = False
+        self._gorev2_reader = None
+        self._gorev2_thread = None
         
         # Önceden tanımlanmış görev koordinatları (İstanbul çevresi)
         self.mission_coordinates = [
@@ -321,19 +325,22 @@ class GCSApp(QWidget):
         self.read_mission_button = QPushButton("Rotayı Oku")
         self.clear_mission_button = QPushButton("Rotayı Temizle")
         self.load_mission_button = QPushButton("Görev")
+        self.gorev2_button = QPushButton("Görev 2")
         mission_buttons_layout.addWidget(self.upload_mission_button)
         mission_buttons_layout.addWidget(self.read_mission_button)
         mission_buttons_layout.addWidget(self.clear_mission_button)
         mission_buttons_layout.addWidget(self.load_mission_button)
+        mission_buttons_layout.addWidget(self.gorev2_button)
         mission_control_layout.addLayout(mission_buttons_layout)
         
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
         self.read_mission_button.clicked.connect(self.read_mission_from_vehicle)
         self.clear_mission_button.clicked.connect(self.clear_mission)
         self.load_mission_button.clicked.connect(self.load_predefined_mission)
+        self.gorev2_button.clicked.connect(self.launch_gorev2)
 
         self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, 
-                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button]
+                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button, self.gorev2_button]
         for btn in self.mode_buttons:
             btn.setEnabled(False)
 
@@ -355,6 +362,350 @@ class GCSApp(QWidget):
         self.graph_timer.timeout.connect(self.update_graphs)
 
         self.refresh_ports()
+
+    def launch_gorev2(self):
+        try:
+            if not self.is_connected or not self.vehicle:
+                self.log_message_received.emit("Görev 2 için önce araca bağlanın.")
+                return
+            if self.gorev2_running:
+                self.log_message_received.emit("Görev 2 zaten çalışıyor.")
+                return
+            self.gorev2_running = True
+            self.log_message_received.emit("Görev 2 başlatılıyor (uygulama içi)...")
+            self._gorev2_thread = threading.Thread(target=self._gorev2_worker, daemon=True)
+            self._gorev2_thread.start()
+        except Exception as e:
+            self.log_message_received.emit(f"Görev 2 başlatma hatası: {e}")
+
+    def _gorev2_worker(self):
+        import cv2
+        import numpy as np
+        try:
+            # Parametreler (erkan_denendi.py ile uyumlu)
+            PWM_STOP = 1500
+            PWM_FAST = 1800
+            TARGET_LAT = 40.771275
+            TARGET_LON = 29.437543
+            obstacle_detected = False
+            obstacle_avoidance_active = False
+            avoidance_start_time = 0
+            avoidance_stage = 0
+            current_mode = "MANUAL"
+            last_nav_update = 0
+
+            def calculate_bearing(lat1, lon1, lat2, lon2):
+                lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+                dlon = lon2 - lon1
+                y = math.sin(dlon) * math.cos(lat2)
+                x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
+                bearing = math.atan2(y, x)
+                bearing = math.degrees(bearing)
+                return (bearing + 360) % 360
+
+            def calculate_distance(lat1, lon1, lat2, lon2):
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                lat_to_m = 111000
+                lon_to_m = 111000 * math.cos(math.radians(lat1))
+                return math.sqrt((dlat * lat_to_m)**2 + (dlon * lon_to_m)**2)
+
+            def bearing_to_motor_command(target_bearing, current_heading):
+                bearing_diff = target_bearing - current_heading
+                if bearing_diff > 180:
+                    bearing_diff -= 360
+                elif bearing_diff < -180:
+                    bearing_diff += 360
+                if abs(bearing_diff) < 25:
+                    thr, steer = PWM_FAST, PWM_STOP
+                elif bearing_diff > 0:
+                    steer_offset = min(180, abs(bearing_diff) * 2.2)
+                    thr = PWM_FAST
+                    steer = PWM_STOP - steer_offset
+                else:
+                    steer_offset = min(180, abs(bearing_diff) * 2.2)
+                    thr = PWM_FAST
+                    steer = PWM_STOP + steer_offset
+                return thr, steer
+
+            def send_rc(throttle_pwm: int, steer_pwm: int):
+                if not self.vehicle:
+                    return
+                throttle_pwm = max(1100, min(1900, int(throttle_pwm)))
+                steer_pwm = max(1100, min(1900, int(steer_pwm)))
+                try:
+                    self.vehicle.channels.overrides['3'] = throttle_pwm
+                    self.vehicle.channels.overrides['1'] = steer_pwm
+                    self.vehicle.channels.overrides['2'] = steer_pwm
+                except Exception as e:
+                    self.log_message_received.emit(f"[GÖREV 2] RC gönderim hatası: {e}")
+
+            def stop_all():
+                send_rc(PWM_STOP, PWM_STOP)
+
+            def detect_obstacle_position(roi, mask_yellow):
+                h, w = roi.shape[:2]
+                left_part = mask_yellow[:, :w//3]
+                center_part = mask_yellow[:, w//3:2*w//3]
+                right_part = mask_yellow[:, 2*w//3:]
+                left_density = np.count_nonzero(left_part) / (left_part.shape[0] * left_part.shape[1])
+                center_density = np.count_nonzero(center_part) / (center_part.shape[0] * center_part.shape[1])
+                right_density = np.count_nonzero(right_part) / (right_part.shape[0] * right_part.shape[1])
+                max_density = max(left_density, center_density, right_density)
+                if max_density < 0.02:
+                    return "none"
+                elif left_density == max_density:
+                    return "left"
+                elif right_density == max_density:
+                    return "right"
+                else:
+                    return "center"
+
+            def obstacle_avoidance_maneuver(obstacle_position):
+                nonlocal obstacle_avoidance_active, avoidance_start_time, avoidance_stage
+                current_time = time.time()
+                if not obstacle_avoidance_active:
+                    obstacle_avoidance_active = True
+                    avoidance_start_time = current_time
+                    avoidance_stage = 1
+                    self.log_message_received.emit(f"[GÖREV 2] ENGEL ATLAMA BAŞLADI - Engel konumu: {obstacle_position}")
+                elapsed = current_time - avoidance_start_time
+                if avoidance_stage == 1:
+                    if obstacle_position == "left":
+                        send_rc(PWM_FAST, PWM_STOP + 200)
+                    elif obstacle_position == "right":
+                        send_rc(PWM_FAST, PWM_STOP - 200)
+                    else:
+                        direction = 1 if (current_time % 2) > 1 else -1
+                        send_rc(PWM_FAST, PWM_STOP + (200 * direction))
+                    if elapsed > 2.0:
+                        avoidance_stage = 2
+                        avoidance_start_time = current_time
+                elif avoidance_stage == 2:
+                    send_rc(PWM_FAST, PWM_STOP)
+                    if elapsed > 1.5:
+                        avoidance_stage = 3
+                        avoidance_start_time = current_time
+                elif avoidance_stage == 3:
+                    if obstacle_position == "left":
+                        send_rc(PWM_FAST, PWM_STOP - 180)
+                    elif obstacle_position == "right":
+                        send_rc(PWM_FAST, PWM_STOP + 180)
+                    else:
+                        direction = -1 if (current_time % 2) > 1 else 1
+                        send_rc(PWM_FAST, PWM_STOP + (180 * direction))
+                    if elapsed > 1.5:
+                        obstacle_avoidance_active = False
+                        avoidance_stage = 0
+                        self.log_message_received.emit("[GÖREV 2] ENGEL ATLAMA TAMAMLANDI")
+                        return False
+                return True
+
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                self.log_message_received.emit("[GÖREV 2] Kamera açılamadı")
+                self.gorev2_running = False
+                return
+            self.log_message_received.emit("[GÖREV 2] Kamera hazır. 'q' ile kapatabilirsiniz.")
+            while self.gorev2_running:
+                ok, frame = cap.read()
+                if not ok:
+                    continue
+                # GPS/Heading oku
+                current_lat = None
+                current_lon = None
+                current_heading = None
+                if self.vehicle and hasattr(self.vehicle, 'location') and self.vehicle.location and hasattr(self.vehicle.location, 'global_frame'):
+                    gf = self.vehicle.location.global_frame
+                    current_lat = getattr(gf, 'lat', None)
+                    current_lon = getattr(gf, 'lon', None)
+                if self.vehicle:
+                    current_heading = getattr(self.vehicle, 'heading', None)
+
+                if current_lat is not None and current_lon is not None and current_heading is not None:
+                    distance = calculate_distance(current_lat, current_lon, TARGET_LAT, TARGET_LON)
+                    target_bearing = calculate_bearing(current_lat, current_lon, TARGET_LAT, TARGET_LON)
+                    gps_status = f"Lat:{current_lat:.6f}, Lon:{current_lon:.6f}"
+                    distance_status = f"Mesafe: {distance:.1f}m"
+                    bearing_status = f"Hedef bearing: {target_bearing:.0f}°, Heading: {current_heading:.0f}°"
+                else:
+                    gps_status = "GPS verisi yok"
+                    distance_status = "Mesafe: ---"
+                    bearing_status = "Bearing: ---"
+                    distance = 999
+
+                # ROI ve engel algılama
+                h, w = frame.shape[:2]
+                rw, rh = int(w * 0.6), int(h * 0.6)
+                x0, y0 = (w - rw) // 2, (h - rh) // 2
+                roi = frame[y0:y0+rh, x0:x0+rw]
+                hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+                mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+                yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
+                obstacle_position = detect_obstacle_position(roi, mask_yellow)
+
+                # Engel kontrolü
+                if yellow_ratio > 0.15:
+                    if not obstacle_detected:
+                        self.log_message_received.emit(f"[GÖREV 2] ENGEL ALGILANDI! {yellow_ratio*100:.1f}% - Konum: {obstacle_position}")
+                        obstacle_detected = True
+                else:
+                    if obstacle_detected:
+                        self.log_message_received.emit("[GÖREV 2] ENGEL TEMİZLENDİ")
+                    obstacle_detected = False
+                    if obstacle_avoidance_active:
+                        obstacle_avoidance_active = False
+                        avoidance_stage = 0
+                        self.log_message_received.emit("[GÖREV 2] ENGEL ATLAMA İPTAL - ENGEL YOK")
+
+                # Otomatik navigasyon
+                now = time.time()
+                if current_mode == "AUTO_GPS" and current_lat is not None and (now - last_nav_update > 0.5):
+                    if obstacle_detected and yellow_ratio > 0.15 and not obstacle_avoidance_active:
+                        obstacle_avoidance_maneuver(obstacle_position)
+                        last_nav_update = now
+                    elif obstacle_avoidance_active:
+                        maneuver_active = obstacle_avoidance_maneuver(obstacle_position)
+                        last_nav_update = now
+                    else:
+                        if distance > 2 and current_heading is not None:
+                            thr, steer = bearing_to_motor_command(target_bearing, current_heading)
+                            send_rc(thr, steer)
+                        else:
+                            stop_all()
+                            self.log_message_received.emit("[GÖREV 2] HEDEFE VARILDI!")
+                            current_mode = "MANUAL"
+                        last_nav_update = now
+
+                # Görsel overlay
+                cv2.rectangle(frame, (x0, y0), (x0+rw, y0+rh), (0,255,0), 2)
+                part_w = rw // 3
+                cv2.line(frame, (x0 + part_w, y0), (x0 + part_w, y0 + rh), (255,255,0), 1)
+                cv2.line(frame, (x0 + 2*part_w, y0), (x0 + 2*part_w, y0 + rh), (255,255,0), 1)
+                status_color = (0,255,0) if current_mode == "MANUAL" else (0,255,255)
+                avoidance_text = " - ENGEL ATLAMA" if obstacle_avoidance_active else ""
+                cv2.putText(frame, f"Mod: {current_mode}{avoidance_text}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
+                cv2.putText(frame, gps_status, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,0), 2)
+                cv2.putText(frame, distance_status, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,255), 2)
+                cv2.putText(frame, bearing_status, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
+                obstacle_color = (0,0,255) if obstacle_detected else (0,255,255)
+                obstacle_info = f"Engel: {yellow_ratio*100:.1f}%"
+                if obstacle_detected:
+                    obstacle_info += f" ({obstacle_position})"
+                cv2.putText(frame, obstacle_info, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, obstacle_color, 2)
+                if obstacle_avoidance_active:
+                    stage_names = ["", "Yan Hareket", "Düz Git", "Geri Dön"]
+                    stage_text = f"Aşama: {stage_names[avoidance_stage]}"
+                    cv2.putText(frame, stage_text, (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,100,100), 2)
+
+                cv2.imshow('Görev 2 Kamera', frame)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
+                    break
+                elif key == ord('g'):
+                    current_mode = "AUTO_GPS"
+                    self.log_message_received.emit("[GÖREV 2] GPS otomatik modu aktif")
+                    try:
+                        self.set_vehicle_mode("AUTO")
+                    except Exception:
+                        pass
+                elif key == ord('1'):
+                    current_mode = "MANUAL"
+                    send_rc(PWM_FAST, PWM_STOP)
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('2'):
+                    current_mode = "MANUAL"
+                    send_rc(PWM_FAST, PWM_STOP + 100)
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('3'):
+                    current_mode = "MANUAL"
+                    send_rc(PWM_FAST, PWM_STOP - 100)
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('4'):
+                    current_mode = "MANUAL"
+                    obstacle_detected = True
+                    obstacle_avoidance_maneuver("left")
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('5'):
+                    current_mode = "MANUAL"
+                    obstacle_detected = True
+                    obstacle_avoidance_maneuver("right")
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('6'):
+                    current_mode = "MANUAL"
+                    obstacle_detected = True
+                    obstacle_avoidance_maneuver("center")
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+                elif key == ord('r'):
+                    self.log_message_received.emit("[GÖREV 2] Reset tuşu (r) sadece simülasyonda etkili")
+                elif key == ord('s'):
+                    current_mode = "MANUAL"
+                    stop_all()
+                    try:
+                        self.set_vehicle_mode("MANUAL")
+                    except Exception:
+                        pass
+
+            cap.release()
+            cv2.destroyAllWindows()
+            self.log_message_received.emit("[GÖREV 2] Kapatıldı.")
+        except Exception as e:
+            self.log_message_received.emit(f"[GÖREV 2] Hata: {e}")
+        finally:
+            self.gorev2_running = False
+
+    def terminate_gorev2(self):
+        try:
+            if self.gorev2_running:
+                self.log_message_received.emit("Görev 2 sonlandırılıyor...")
+                self.gorev2_running = False
+            if self.gorev2_process and self.gorev2_process.poll() is None:
+                self.gorev2_process.terminate()
+        except Exception as e:
+            self.log_message_received.emit(f"Görev 2 sonlandırma hatası: {e}")
+
+    def closeEvent(self, event):
+        try:
+            self.terminate_gorev2()
+        finally:
+            super().closeEvent(event)
+
+    def keyPressEvent(self, event):
+        try:
+            if event.key() in (Qt.Key_G,):
+                # 'g' → otomatik (AUTO)
+                self.set_vehicle_mode("AUTO")
+                self.log_message_received.emit("Klavye: 'g' algılandı → AUTO moda geçiliyor")
+                event.accept()
+                return
+            if event.key() in (Qt.Key_S,):
+                # 's' → manuel (MANUAL) ve thruster durdur
+                self.set_vehicle_mode("MANUAL")
+                self.stop_thrusters()
+                self.log_message_received.emit("Klavye: 's' algılandı → MANUAL ve motorlar durduruldu")
+                event.accept()
+                return
+        except Exception as e:
+            self.log_message_received.emit(f"Klavye kısayol hatası: {e}")
+        super().keyPressEvent(event)
     
     def setup_web_channel(self):
         self.bridge = MapBridge(self)
@@ -1194,10 +1545,16 @@ class GCSApp(QWidget):
             
             # 1. Hız grafiği - İki ayrı çizgi gösterimi
             self.speed_ax.clear()
-            # Mavi çizgi: Gerçek hız
-            self.speed_ax.plot(relative_times, list(self.speed_data), 'b-', linewidth=2, alpha=0.9, label='Gerçek Hız')
-            # Kırmızı kesikli çizgi: Hız setpoint
-            self.speed_ax.plot(relative_times, list(self.speed_setpoint_data), 'r--', linewidth=2, alpha=0.9, label='Setpoint')
+            # Mavi çizgi: Gerçek hız (x-y uzunluklarını hizala)
+            speed_vals = list(self.speed_data)
+            n_speed = min(len(relative_times), len(speed_vals))
+            if n_speed > 1:
+                self.speed_ax.plot(relative_times[-n_speed:], speed_vals[-n_speed:], 'b-', linewidth=2, alpha=0.9, label='Gerçek Hız')
+            # Kırmızı kesikli çizgi: Hız setpoint (ayrı hizalama)
+            speed_sp_vals = list(self.speed_setpoint_data)
+            n_speed_sp = min(len(relative_times), len(speed_sp_vals))
+            if n_speed_sp > 1:
+                self.speed_ax.plot(relative_times[-n_speed_sp:], speed_sp_vals[-n_speed_sp:], 'r--', linewidth=2, alpha=0.9, label='Setpoint')
             self.speed_ax.set_title('Hız: Mavi=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
             self.speed_ax.set_ylabel('m/s', fontsize=6)
             self.speed_ax.grid(True, alpha=0.2)
@@ -1221,9 +1578,15 @@ class GCSApp(QWidget):
             # 2. Heading grafiği - İki ayrı çizgi gösterimi
             self.heading_ax.clear()
             # Yeşil çizgi: Gerçek heading
-            self.heading_ax.plot(relative_times, list(self.heading_data), 'g-', linewidth=2, alpha=0.9, label='Gerçek Heading')
+            heading_vals = list(self.heading_data)
+            n_head = min(len(relative_times), len(heading_vals))
+            if n_head > 1:
+                self.heading_ax.plot(relative_times[-n_head:], heading_vals[-n_head:], 'g-', linewidth=2, alpha=0.9, label='Gerçek Heading')
             # Kırmızı kesikli çizgi: Heading setpoint
-            self.heading_ax.plot(relative_times, list(self.heading_setpoint_data), 'r--', linewidth=2, alpha=0.9, label='Setpoint')
+            heading_sp_vals = list(self.heading_setpoint_data)
+            n_head_sp = min(len(relative_times), len(heading_sp_vals))
+            if n_head_sp > 1:
+                self.heading_ax.plot(relative_times[-n_head_sp:], heading_sp_vals[-n_head_sp:], 'r--', linewidth=2, alpha=0.9, label='Setpoint')
             self.heading_ax.set_title('Heading: Yeşil=Gerçek, Kırmızı=Setpoint', fontsize=8, pad=2)
             self.heading_ax.set_ylabel('°', fontsize=6)
             self.heading_ax.grid(True, alpha=0.2)
@@ -1254,9 +1617,15 @@ class GCSApp(QWidget):
             # 3. Thruster grafiği - İki ayrı çizgi gösterimi
             self.thruster_ax.clear()
             # Mavi çizgi: Sol thruster
-            self.thruster_ax.plot(relative_times, list(self.thruster_left_data), 'b-', linewidth=2, alpha=0.9, label='Sol Motor')
+            thr_left_vals = list(self.thruster_left_data)
+            n_thr_left = min(len(relative_times), len(thr_left_vals))
+            if n_thr_left > 1:
+                self.thruster_ax.plot(relative_times[-n_thr_left:], thr_left_vals[-n_thr_left:], 'b-', linewidth=2, alpha=0.9, label='Sol Motor')
             # Kırmızı çizgi: Sağ thruster
-            self.thruster_ax.plot(relative_times, list(self.thruster_right_data), 'r-', linewidth=2, alpha=0.9, label='Sağ Motor')
+            thr_right_vals = list(self.thruster_right_data)
+            n_thr_right = min(len(relative_times), len(thr_right_vals))
+            if n_thr_right > 1:
+                self.thruster_ax.plot(relative_times[-n_thr_right:], thr_right_vals[-n_thr_right:], 'r-', linewidth=2, alpha=0.9, label='Sağ Motor')
             self.thruster_ax.set_title('Thruster: Mavi=Sol, Kırmızı=Sağ', fontsize=8, pad=2)
             self.thruster_ax.set_xlabel('Zaman (s)', fontsize=6)
             self.thruster_ax.set_ylabel('%', fontsize=6)
