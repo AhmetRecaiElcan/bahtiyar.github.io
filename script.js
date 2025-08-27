@@ -754,6 +754,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mission control buttons
     document.getElementById('start-mission-btn').addEventListener('click', startMission);
     document.getElementById('stop-mission-btn').addEventListener('click', stopMission);
+
+    // Header GPS button -> runGPSNavigation
+    const gpsHeaderBtn = document.getElementById('gps-run-header-btn');
+    if (gpsHeaderBtn) {
+        gpsHeaderBtn.addEventListener('click', runGPSNavigation);
+    }
     
     // If on mobile, make sure map controls are usable
     if (window.innerWidth <= 768) {

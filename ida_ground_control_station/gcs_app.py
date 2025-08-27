@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 import time
 import threading
 import math
@@ -21,6 +22,19 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.animation import FuncAnimation
 
 # Pixhawk bağlantısı için import edilecek (bu satırları aktif edin)
+try:
+    # Python 3.10+ uyumluluğu: collections.MutableMapping gibi ögeler collections.abc içine taşındı
+    import collections as _collections
+    import collections.abc as _collections_abc
+    if not hasattr(_collections, 'MutableMapping'):
+        _collections.MutableMapping = _collections_abc.MutableMapping
+    if not hasattr(_collections, 'Mapping'):
+        _collections.Mapping = _collections_abc.Mapping
+    if not hasattr(_collections, 'Sequence'):
+        _collections.Sequence = _collections_abc.Sequence
+except Exception:
+    pass
+
 from dronekit import connect, VehicleMode, LocationGlobalRelative, APIException
 import serial.tools.list_ports
 
@@ -326,6 +340,11 @@ class GCSApp(QWidget):
         mission_buttons_layout.addWidget(self.clear_mission_button)
         mission_buttons_layout.addWidget(self.load_mission_button)
         mission_control_layout.addLayout(mission_buttons_layout)
+
+        # GPS Navigasyon - bruhh2.py çalıştırma butonu (bağımsız)
+        self.gps_nav_button = QPushButton("🚀 GPS Navigasyon")
+        self.gps_nav_button.clicked.connect(self.run_gps_navigation_script)
+        mission_control_layout.addWidget(self.gps_nav_button)
         
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
         self.read_mission_button.clicked.connect(self.read_mission_from_vehicle)
@@ -355,6 +374,25 @@ class GCSApp(QWidget):
         self.graph_timer.timeout.connect(self.update_graphs)
 
         self.refresh_ports()
+
+    def run_gps_navigation_script(self):
+        """Yan panelden GPS Navigasyon'u başlatır: görev kodları/bruhh2.py"""
+        try:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            script_path = os.path.join(project_root, "görev kodları", "bruhh2.py")
+            if not os.path.exists(script_path):
+                QMessageBox.warning(self, "Hata", f"Script bulunamadı:\n{script_path}")
+                self.log_message_received.emit(f"GPS Navigasyon scripti bulunamadı: {script_path}")
+                return
+
+            # Sanal ortamın Python'u ile çalıştır
+            python_executable = sys.executable
+            subprocess.Popen([python_executable, script_path], cwd=project_root, start_new_session=True)
+            self.log_message_received.emit("GPS Navigasyon (bruhh2.py) başlatıldı")
+            QMessageBox.information(self, "GPS Navigasyon", "GPS Navigasyon başlatıldı")
+        except Exception as e:
+            self.log_message_received.emit(f"GPS Navigasyon başlatılamadı: {str(e)}")
+            QMessageBox.critical(self, "Hata", f"GPS Navigasyon başlatılamadı:\n{str(e)}")
     
     def setup_web_channel(self):
         self.bridge = MapBridge(self)

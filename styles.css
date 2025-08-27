@@ -35,6 +35,12 @@ header {
     z-index: 1000;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 header h1 {
     font-size: 1.5rem;
 }
@@ -98,6 +104,17 @@ button, select {
     background-color: #f0f0f0;
     cursor: pointer;
     font-size: 0.9rem;
+}
+
+.gps-run-btn {
+    width: auto;
+    background-color: #1976D2;
+    color: #fff;
+    border: none;
+}
+
+.gps-run-btn:hover {
+    background-color: #1565C0;
 }
 
 button:hover {
