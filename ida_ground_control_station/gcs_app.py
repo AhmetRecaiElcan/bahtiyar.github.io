@@ -809,6 +809,7 @@ class GCSApp(QWidget):
             # Dinleyicileri ekle
             self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
             self.vehicle.add_attribute_listener('heading', self.heading_callback)
+            self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
         except Exception as e:
             self.connection_status_changed.emit(False, f"Bağlantı hatası: {e}")
@@ -869,6 +870,25 @@ class GCSApp(QWidget):
                 )
                 self.vehicle.send_mavlink(msg)
                 self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
+                
+                # Yeni MAV_CMD_SET_MESSAGE_INTERVAL ile güvence altına al (5Hz)
+                try:
+                    from pymavlink import mavutil
+                    for msg_id in (36, 65):  # 36=SERVO_OUTPUT_RAW, 65=RC_CHANNELS
+                        interval_us = 200000  # 5Hz
+                        set_int = self.vehicle.message_factory.command_long_encode(
+                            self.vehicle._master.target_system,
+                            self.vehicle._master.target_component,
+                            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                            0,
+                            msg_id,
+                            interval_us,
+                            0, 0, 0, 0, 0
+                        )
+                        self.vehicle.send_mavlink(set_int)
+                    self.log_message_received.emit("SET_MESSAGE_INTERVAL gönderildi (SERVO_OUTPUT_RAW & RC_CHANNELS 5Hz)")
+                except Exception as e2:
+                    self.log_message_received.emit(f"SET_MESSAGE_INTERVAL başarısız: {e2}")
                 
                 # Servo function'ları da alalım - daha hızlı başlat
                 QTimer.singleShot(500, self.log_servo_functions)  # 500ms sonra (eskiden 2000ms)
@@ -955,6 +975,18 @@ class GCSApp(QWidget):
                                 
                 self.vehicle.on_message('SERVO_OUTPUT_RAW')(servo_output_listener)
                 self.log_message_received.emit("✓ SERVO_OUTPUT_RAW listener eklendi")
+                
+                # RC_CHANNELS listener (debug ve teşhis için)
+                def rc_channels_listener(vehicle, name, message):
+                    try:
+                        chs = [message.chan1_raw, message.chan2_raw, message.chan3_raw, message.chan4_raw]
+                        self.log_message_received.emit(f"RC_CHANNELS: CH1={chs[0]}, CH2={chs[1]}, CH3={chs[2]}, CH4={chs[3]}")
+                    except Exception:
+                        pass
+                try:
+                    self.vehicle.on_message('RC_CHANNELS')(rc_channels_listener)
+                except Exception:
+                    pass
                 
                 # Periyodik channel durumu kontrol et - daha hızlı başlat
                 QTimer.singleShot(1000, self.periodic_channel_check)  # 1 saniye sonra (eskiden 5000ms)
@@ -1284,9 +1316,44 @@ class GCSApp(QWidget):
         # Cache boşsa: grafik için 0 değeri ekle ama bekle
         if not self.servo_output_cache or '1' not in self.servo_output_cache or '2' not in self.servo_output_cache:
             # Grafik için 0 değeri ekle - grafik hemen başlasın
+            # Fallback: channels.overrides veya channels'dan oku
+            try:
+                ch1 = None
+                ch2 = None
+                if hasattr(self.vehicle, 'channels') and self.vehicle.channels is not None:
+                    # overrides öncelikli
+                    ov = getattr(self.vehicle.channels, 'overrides', {}) or {}
+                    ch1 = ov.get('1', None)
+                    ch2 = ov.get('2', None)
+                    # overrides yoksa normal kanallardan dene (DroneKit bazı sürümlerde destekler)
+                    if ch1 is None:
+                        ch1 = getattr(self.vehicle.channels, 'get', lambda k, d=None: d)('1', None)
+                    if ch2 is None:
+                        ch2 = getattr(self.vehicle.channels, 'get', lambda k, d=None: d)('2', None)
+                # Eğer PWM bulunduysa hesapla ve göster
+                if ch1 is not None and ch2 is not None:
+                    def calc(p):
+                        diff = p - 1500
+                        power = max(0, min(100, abs(diff) / 5.0))
+                        if abs(diff) <= 25:
+                            return 0, "NEUTRAL"
+                        return (power, "GERİ" if diff > 25 else "İLERİ")
+                    left_power, left_dir = calc(ch2)
+                    right_power, right_dir = calc(ch1)
+                    self.thruster_left_data.append(left_power)
+                    self.thruster_right_data.append(right_power)
+                    self.thruster_labels[0].setText(f"Sol: {left_power:.0f}% {left_dir} ({ch2}μs)")
+                    self.thruster_labels[1].setText(f"Sağ: {right_power:.0f}% {right_dir} ({ch1}μs)")
+                    colorL = "gray" if left_dir=="NEUTRAL" else ("green" if left_power<30 else ("orange" if left_power<70 else "red"))
+                    colorR = "gray" if right_dir=="NEUTRAL" else ("green" if right_power<30 else ("orange" if right_power<70 else "red"))
+                    self.thruster_labels[0].setStyleSheet(f"border: 1px solid {colorL}; padding: 5px; font-size: 10px; font-weight: bold; color: {colorL};")
+                    self.thruster_labels[1].setStyleSheet(f"border: 1px solid {colorR}; padding: 5px; font-size: 10px; font-weight: bold; color: {colorR};")
+                    return
+            except Exception:
+                pass
+            # Fallback başarısızsa bekleme görünümü
             self.thruster_left_data.append(0)
             self.thruster_right_data.append(0)
-            
             for i in range(2):
                 side = "Sol" if i == 0 else "Sağ"
                 self.thruster_labels[i].setText(f"{side}: VERİ BEKLENİYOR")
@@ -1314,6 +1381,17 @@ class GCSApp(QWidget):
 
     def heading_callback(self, vehicle, attr_name, value):
         self.current_heading = value
+    
+    def mode_callback(self, vehicle, attr_name, value):
+        try:
+            mode_name = getattr(value, 'name', None) if value is not None else None
+            if mode_name:
+                # Mod etiketi ve status mesajını anında güncelle
+                self.telemetry_values["Mod:"].setText(mode_name)
+                self.status_message_received.emit(f"Mod: {mode_name}")
+                self.log_message_received.emit(f"Araç modu değişti: {mode_name}")
+        except Exception as e:
+            self.log_message_received.emit(f"Mod güncelleme hatası: {e}")
     
     def get_target_heading_from_mission(self, current_heading):
         """Mission waypoint'lerinden target heading hesapla"""
