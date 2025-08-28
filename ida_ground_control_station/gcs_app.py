@@ -549,10 +549,10 @@ class GCSApp(QWidget):
             recordings_dir = os.path.join(os.path.dirname(__file__), 'logs')
             os.makedirs(recordings_dir, exist_ok=True)
             ts = time.strftime('%Y%m%d_%H%M%S')
-            cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.mp4")
-            map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.mp4")
-            # H.264 codec kullan (VLC uyumlu)
-            fourcc = cv2.VideoWriter_fourcc(*'H264')
+            cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.avi")
+            map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.avi")
+            # XVID codec kullan (güvenilir ve uyumlu)
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
             ok_probe, frame_probe = cap.read()
             if not ok_probe:
                 self.log_message_received.emit("[GÖREV 2] İlk kare okunamadı, kayıt açılamadı")
@@ -563,7 +563,7 @@ class GCSApp(QWidget):
             fps_out = 10  # >=1 Hz
             cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
             map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
-            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path} (H.264 codec)")
+            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path} (XVID codec)")
             # Okunan ilk kareyi akışa geri koyamayız, devam edelim
             while self.gorev2_running:
                 ok, frame = cap.read()
