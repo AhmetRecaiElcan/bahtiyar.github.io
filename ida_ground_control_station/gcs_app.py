@@ -870,6 +870,24 @@ class GCSApp(QWidget):
                 self.vehicle.send_mavlink(msg)
                 self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
                 
+                # Ek olarak: SET_MESSAGE_INTERVAL ile mesaj ID bazlı zorla (daha güvenilir)
+                try:
+                    from pymavlink import mavutil
+                    # SERVO_OUTPUT_RAW (MSG_ID=36) için 5Hz (200000 µs)
+                    set_interval = self.vehicle.message_factory.command_long_encode(
+                        self.vehicle._master.target_system,
+                        self.vehicle._master.target_component,
+                        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                        0,
+                        mavutil.mavlink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,  # param1: message_id
+                        200000,  # param2: interval_us (5 Hz)
+                        0, 0, 0, 0, 0
+                    )
+                    self.vehicle.send_mavlink(set_interval)
+                    self.log_message_received.emit("SET_MESSAGE_INTERVAL: SERVO_OUTPUT_RAW 5Hz ayarlandı")
+                except Exception as e_set:
+                    self.log_message_received.emit(f"SET_MESSAGE_INTERVAL gönderilemedi: {e_set}")
+                
                 # Servo function'ları da alalım - daha hızlı başlat
                 QTimer.singleShot(500, self.log_servo_functions)  # 500ms sonra (eskiden 2000ms)
                 
