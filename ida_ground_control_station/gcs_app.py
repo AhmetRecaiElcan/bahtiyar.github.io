@@ -3,7 +3,11 @@ import os
 import time
 import threading
 import math
+import io
+import serial.tools.list_ports
 from collections import deque
+import csv
+from datetime import datetime
 from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSignal, QObject, pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLabel,
                              QTextEdit, QHBoxLayout, QMessageBox, QGridLayout,
@@ -102,6 +106,12 @@ class GCSApp(QWidget):
         self.map_ready = False
         self._pending_waypoints = []  # [(lat, lon)]
         self._pending_clear = False
+        
+        # Telemetri CSV kaydı için durum
+        self._telemetry_csv_file = None
+        self._telemetry_csv_writer = None
+        self._telemetry_log_timer = QTimer(self)
+        self._telemetry_log_timer.timeout.connect(self._log_telemetry_row)
         self.initUI()
         self.log_message_received.connect(self.update_log_safe)
         self.connection_status_changed.connect(self.on_connection_status_changed)
@@ -154,7 +164,8 @@ class GCSApp(QWidget):
             "Yükseklik:": QLabel("N/A"), "Heading:": QLabel("N/A"), 
             "Heading Setpoint:": QLabel("N/A"), "Pitch:": QLabel("N/A"),
             "Yaw:": QLabel("N/A"), "GPS Fix:": QLabel("N/A"),
-            "Mod:": QLabel("N/A"), "Batarya:": QLabel("N/A")
+            "Mod:": QLabel("N/A"), "Batarya:": QLabel("N/A"),
+            "ARM Durumu:": QLabel("N/A")
         }
         
         row = 1
@@ -187,7 +198,113 @@ class GCSApp(QWidget):
         self.attitude_indicator.setFixedSize(120, 120)
         telemetry_layout.addWidget(self.attitude_indicator, 1, 2, 4, 2)
         
-        # 2. GRAFİKLER PANELİ - TELEMETRİ ALTINDA
+        # 2. GÖREVLER PANELİ - TELEMETRİ ALTINDA
+        missions_frame = QFrame()
+        missions_frame.setFrameShape(QFrame.StyledPanel)
+        missions_layout = QVBoxLayout(missions_frame)
+        sidebar_layout.addWidget(missions_frame)
+        
+        missions_title = QLabel("Görevler")
+        missions_title.setFont(QFont('Arial', 14, QFont.Bold))
+        missions_layout.addWidget(missions_title)
+        
+        # Parkur 1 - 4 koordinat
+        parkur1_group = QGroupBox("Parkur 1 (4 Koordinat)")
+        parkur1_layout = QGridLayout(parkur1_group)
+        
+        self.parkur1_coords = []
+        for i in range(4):
+            lat_label = QLabel(f"P{i+1} Lat:")
+            lon_label = QLabel(f"P{i+1} Lon:")
+            lat_input = QDoubleSpinBox()
+            lon_input = QDoubleSpinBox()
+            
+            lat_input.setDecimals(6)
+            lat_input.setRange(-90.0, 90.0)
+            lat_input.setValue(41.0082 + i*0.001)  # Varsayılan değerler
+            
+            lon_input.setDecimals(6)
+            lon_input.setRange(-180.0, 180.0)
+            lon_input.setValue(28.9784 + i*0.001)  # Varsayılan değerler
+            
+            parkur1_layout.addWidget(lat_label, i, 0)
+            parkur1_layout.addWidget(lat_input, i, 1)
+            parkur1_layout.addWidget(lon_label, i, 2)
+            parkur1_layout.addWidget(lon_input, i, 3)
+            
+            self.parkur1_coords.append({"lat": lat_input, "lon": lon_input})
+        
+        missions_layout.addWidget(parkur1_group)
+        
+        # Parkur 2 - 1 koordinat
+        parkur2_group = QGroupBox("Parkur 2 (1 Koordinat)")
+        parkur2_layout = QGridLayout(parkur2_group)
+        
+        self.parkur2_lat = QDoubleSpinBox()
+        self.parkur2_lon = QDoubleSpinBox()
+        
+        self.parkur2_lat.setDecimals(6)
+        self.parkur2_lat.setRange(-90.0, 90.0)
+        self.parkur2_lat.setValue(41.0100)  # Varsayılan değer
+        
+        self.parkur2_lon.setDecimals(6)
+        self.parkur2_lon.setRange(-180.0, 180.0)
+        self.parkur2_lon.setValue(28.9800)  # Varsayılan değer
+        
+        parkur2_layout.addWidget(QLabel("Lat:"), 0, 0)
+        parkur2_layout.addWidget(self.parkur2_lat, 0, 1)
+        parkur2_layout.addWidget(QLabel("Lon:"), 0, 2)
+        parkur2_layout.addWidget(self.parkur2_lon, 0, 3)
+        
+        missions_layout.addWidget(parkur2_group)
+        
+        # Parkur 3 - Renk seçimi
+        parkur3_group = QGroupBox("Parkur 3 (Renk Seçimi)")
+        parkur3_layout = QHBoxLayout(parkur3_group)
+        
+        self.color_buttons = []
+        self.selected_color = None
+        
+        colors = [("Kırmızı", "red"), ("Yeşil", "green"), ("Siyah", "black")]
+        for color_name, color_value in colors:
+            btn = QPushButton(color_name)
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, c=color_value, n=color_name: self.select_color(c, n))
+            if color_value == "red":
+                btn.setStyleSheet("background-color: #ffcccc;")
+            elif color_value == "green":
+                btn.setStyleSheet("background-color: #ccffcc;")
+            else:  # black
+                btn.setStyleSheet("background-color: #cccccc;")
+            parkur3_layout.addWidget(btn)
+            self.color_buttons.append(btn)
+        
+        missions_layout.addWidget(parkur3_group)
+        
+        # Gönder butonu
+        self.send_mission_btn = QPushButton("GÖREV GÖNDER")
+        self.send_mission_btn.setStyleSheet("font-weight: bold; background-color: #4CAF50; color: white; padding: 8px;")
+        self.send_mission_btn.clicked.connect(self.send_custom_mission)
+        self.send_mission_btn.setEnabled(False)  # Başlangıçta devre dışı
+        missions_layout.addWidget(self.send_mission_btn)
+        
+        # Başlat butonu - sadece görev gönderildikten sonra aktif olur
+        self.start_mission_btn = QPushButton("🚀 GÖREVI BAŞLAT")
+        self.start_mission_btn.setStyleSheet("font-weight: bold; background-color: #FF9800; color: white; padding: 8px; font-size: 12px;")
+        self.start_mission_btn.clicked.connect(self.start_custom_mission)
+        self.start_mission_btn.setEnabled(False)  # Başlangıçta devre dışı
+        self.start_mission_btn.setVisible(False)  # Başlangıçta gizli
+        missions_layout.addWidget(self.start_mission_btn)
+        
+        # Durdur butonu - sadece görev çalışırken görünür
+        self.stop_mission_btn = QPushButton("⏹️ GÖREVI DURDUR")
+        self.stop_mission_btn.setStyleSheet("font-weight: bold; background-color: #F44336; color: white; padding: 8px; font-size: 12px;")
+        self.stop_mission_btn.clicked.connect(self.stop_custom_mission)
+        self.stop_mission_btn.setEnabled(False)  # Başlangıçta devre dışı
+        self.stop_mission_btn.setVisible(False)  # Başlangıçta gizli
+        missions_layout.addWidget(self.stop_mission_btn)
+        
+        # 3. GRAFİKLER PANELİ - GÖREVLER ALTINDA
         graphs_frame = QFrame()
         graphs_frame.setFrameShape(QFrame.StyledPanel)
         graphs_layout = QVBoxLayout(graphs_frame)
@@ -242,7 +359,7 @@ class GCSApp(QWidget):
         self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
         graphs_layout.addWidget(self.thruster_canvas)
         
-        # 3. SİSTEM LOGLARI PANELİ - GRAFİKLER ALTINDA
+        # 4. SİSTEM LOGLARI PANELİ - GRAFİKLER ALTINDA
         log_frame = QFrame()
         log_frame.setFrameShape(QFrame.StyledPanel)
         log_layout = QVBoxLayout(log_frame)
@@ -254,7 +371,7 @@ class GCSApp(QWidget):
         self.log_display.setReadOnly(True)
         log_layout.addWidget(self.log_display)
 
-        # 4. BAĞLANTI PANELİ - LOG ALTINDA
+        # 5. BAĞLANTI PANELİ - LOG ALTINDA
         connection_frame = QFrame()
         connection_frame.setFrameShape(QFrame.StyledPanel)
         connection_layout = QVBoxLayout(connection_frame)
@@ -307,7 +424,7 @@ class GCSApp(QWidget):
         connection_grid.addWidget(self.connect_button, 5, 1)
         connection_layout.addLayout(connection_grid)
 
-        # 5. DURUM PANELİ
+        # 6. DURUM PANELİ
         status_frame = QFrame()
         status_frame.setFrameShape(QFrame.StyledPanel)
         status_layout = QVBoxLayout(status_frame)
@@ -319,7 +436,7 @@ class GCSApp(QWidget):
         self.status_label.setWordWrap(True)
         status_layout.addWidget(self.status_label)
 
-        # 6. GÖREV KONTROL PANELİ
+        # 7. GÖREV KONTROL PANELİ
         mission_control_frame = QFrame()
         mission_control_frame.setFrameShape(QFrame.StyledPanel)
         mission_control_layout = QVBoxLayout(mission_control_frame)
@@ -354,15 +471,37 @@ class GCSApp(QWidget):
         mission_buttons_layout.addWidget(self.gorev2_button)
         mission_control_layout.addLayout(mission_buttons_layout)
         
+        # ARM/DISARM butonları ekle
+        arm_buttons_layout = QHBoxLayout()
+        self.arm_button = QPushButton("ARM")
+        self.disarm_button = QPushButton("DISARM")
+        self.test_motors_button = QPushButton("TEST MOTORLAR")
+        self.arm_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 5px;")
+        self.disarm_button.setStyleSheet("background-color: #F44336; color: white; font-weight: bold; padding: 5px;")
+        self.test_motors_button.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 5px;")
+        self.arm_button.clicked.connect(self.arm_vehicle)
+        self.disarm_button.clicked.connect(self.disarm_vehicle)
+        self.test_motors_button.clicked.connect(self.test_motors_manual)
+        arm_buttons_layout.addWidget(self.arm_button)
+        arm_buttons_layout.addWidget(self.disarm_button)
+        arm_buttons_layout.addWidget(self.test_motors_button)
+        mission_control_layout.addLayout(arm_buttons_layout)
+        
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
-        self.read_mission_button.clicked.connect(self.read_mission_from_vehicle)
+        self.read_mission_button.clicked.connect(self.read_custom_mission_from_vehicle)
         self.clear_mission_button.clicked.connect(self.clear_mission)
         self.load_mission_button.clicked.connect(self.load_predefined_mission)
         self.gorev2_button.clicked.connect(self.launch_gorev2)
 
         self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, 
-                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button, self.gorev2_button]
+                           self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button, self.gorev2_button,
+                           self.arm_button, self.disarm_button, self.test_motors_button]
         for btn in self.mode_buttons:
+            btn.setEnabled(False)
+
+        # Görev gönder butonu da bağlantı kontrolü altına ekle
+        self.mission_control_buttons = [self.send_mission_btn, self.start_mission_btn, self.stop_mission_btn]
+        for btn in self.mission_control_buttons:
             btn.setEnabled(False)
 
         # ... (main_layout'a widget'ların eklenmesi)
@@ -384,6 +523,308 @@ class GCSApp(QWidget):
 
         self.refresh_ports()
 
+    def select_color(self, color_value, color_name):
+        """Parkur 3 için renk seçimini işler"""
+        # Önce tüm butonları sıfırla
+        for btn in self.color_buttons:
+            btn.setChecked(False)
+        
+        # Seçilen butonu işaretle
+        sender = self.sender()
+        sender.setChecked(True)
+        
+        # Seçilen rengi kaydet
+        self.selected_color = {"value": color_value, "name": color_name}
+        self.log_message_received.emit(f"Parkur 3 renk seçimi: {color_name}")
+
+    def send_custom_mission(self):
+        """Özel görev koordinatlarını ve renk seçimini araca gönderir"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Görev göndermek için önce araca bağlanın!")
+            return
+        
+        try:
+            # Mevcut waypoint'leri temizle
+            self.clear_mission()
+            
+            # Koordinatları topla
+            mission_coords = []
+            
+            # Parkur 1 koordinatları (4 adet)
+            for i, coord_pair in enumerate(self.parkur1_coords):
+                lat = coord_pair["lat"].value()
+                lon = coord_pair["lon"].value()
+                mission_coords.append((lat, lon, f"Parkur1_P{i+1}"))
+            
+            # Parkur 2 koordinatı (1 adet)
+            lat = self.parkur2_lat.value()
+            lon = self.parkur2_lon.value()
+            mission_coords.append((lat, lon, "Parkur2"))
+            
+            # Koordinatları waypoint listesine ekle ve haritaya gönder
+            for lat, lon, name in mission_coords:
+                waypoint_num = len(self.waypoints) + 1
+                self.waypoints.append({"lat": lat, "lng": lon, "num": waypoint_num, "name": name})
+                self._emit_add_waypoint_safe(lat, lon)
+            
+            # Seçilen rengi logla
+            color_info = ""
+            if self.selected_color:
+                color_info = f" | Seçilen Renk: {self.selected_color['name']}"
+            
+            # Detaylı log mesajı
+            log_message = f"Özel Görev Gönderildi ({len(mission_coords)} waypoint):{color_info}\n"
+            log_message += "Parkur 1 Koordinatları:\n"
+            for i, (lat, lon, name) in enumerate(mission_coords[:4]):
+                log_message += f"  P{i+1}: {lat:.6f}, {lon:.6f}\n"
+            log_message += f"Parkur 2 Koordinatı:\n"
+            log_message += f"  {mission_coords[4][0]:.6f}, {mission_coords[4][1]:.6f}\n"
+            if self.selected_color:
+                log_message += f"Parkur 3 Seçilen Renk: {self.selected_color['name']}"
+            
+            self.log_message_received.emit(log_message)
+            
+            # ArduPilot'a gönder
+            if len(self.waypoints) > 0:
+                self.send_mission_to_vehicle()
+                
+                # Görev başarıyla gönderilirse başlat butonunu aktif et
+                self.start_mission_btn.setVisible(True)
+                self.start_mission_btn.setEnabled(True)
+                self.send_mission_btn.setText("GÖREV GÖNDERİLDİ ✓")
+                self.send_mission_btn.setStyleSheet("font-weight: bold; background-color: #2196F3; color: white; padding: 8px;")
+                self.log_message_received.emit("Görev gönderildi! Artık 'GÖREVI BAŞLAT' butonuna basabilirsiniz.")
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Özel görev gönderme hatası: {e}")
+
+    def arm_vehicle(self):
+        """Aracı ARM eder (motorları aktif hale getirir)"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("ARM için araç bağlantısı gerekli!")
+            return
+        
+        try:
+            self.log_message_received.emit("Araç ARM ediliyor...")
+            # ARM command
+            self.vehicle.armed = True
+            
+            # ARM durumunu kontrol et
+            timeout = 10  # 10 saniye timeout
+            start_time = time.time()
+            while not self.vehicle.armed and (time.time() - start_time) < timeout:
+                time.sleep(0.1)
+            
+            if self.vehicle.armed:
+                self.log_message_received.emit("Araç başarıyla ARM edildi! Motorlar aktif.")
+                self.arm_button.setText("ARMED ✓")
+                self.arm_button.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 5px;")
+            else:
+                self.log_message_received.emit("ARM işlemi başarısız! Araç ARM edilemedi.")
+                
+        except Exception as e:
+            self.log_message_received.emit(f"ARM hatası: {e}")
+
+    def disarm_vehicle(self):
+        """Aracı DISARM eder (motorları devre dışı bırakır)"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("DISARM için araç bağlantısı gerekli!")
+            return
+        
+        try:
+            self.log_message_received.emit("Araç DISARM ediliyor...")
+            # DISARM command
+            self.vehicle.armed = False
+            
+            # DISARM durumunu kontrol et
+            timeout = 10  # 10 saniye timeout
+            start_time = time.time()
+            while self.vehicle.armed and (time.time() - start_time) < timeout:
+                time.sleep(0.1)
+            
+            if not self.vehicle.armed:
+                self.log_message_received.emit("Araç başarıyla DISARM edildi! Motorlar devre dışı.")
+                self.arm_button.setText("ARM")
+                self.arm_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 5px;")
+            else:
+                self.log_message_received.emit("DISARM işlemi başarısız!")
+                
+        except Exception as e:
+            self.log_message_received.emit(f"DISARM hatası: {e}")
+
+    def test_motors_manual(self):
+        """Motorları manuel olarak test eder"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Motor test için araç bağlantısı gerekli!")
+            return
+        
+        if not self.vehicle.armed:
+            self.log_message_received.emit("Motor test için araç ARM edilmeli!")
+            return
+        
+        try:
+            self.log_message_received.emit("Motor test başlatılıyor...")
+            
+            # RC Override ile motor test
+            # Kanal 1: Sol thruster
+            # Kanal 3: Sağ thruster (veya throttle)
+            test_pwm = 1600  # Orta seviye PWM
+            
+            # 2 saniye motor test
+            self.vehicle.channels.overrides['1'] = test_pwm  # Sol
+            self.vehicle.channels.overrides['3'] = test_pwm  # Sağ/Throttle
+            self.log_message_received.emit(f"Motor test: CH1={test_pwm}, CH3={test_pwm} PWM gönderildi")
+            
+            # 2 saniye bekle
+            QTimer.singleShot(2000, self.stop_motor_test)
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Motor test hatası: {e}")
+    
+    def stop_motor_test(self):
+        """Motor testini durdurur"""
+        try:
+            # Motorları durdur
+            self.vehicle.channels.overrides['1'] = 1500  # Nötr
+            self.vehicle.channels.overrides['3'] = 1500  # Nötr
+            self.log_message_received.emit("Motor test tamamlandı - motorlar durduruldu")
+            
+            # 1 saniye sonra override'ları temizle
+            QTimer.singleShot(1000, self.clear_motor_overrides)
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Motor test durdurma hatası: {e}")
+    
+    def clear_motor_overrides(self):
+        """Motor override'larını temizler"""
+        try:
+            self.vehicle.channels.overrides = {}
+            self.log_message_received.emit("Motor override'ları temizlendi")
+        except Exception as e:
+            self.log_message_received.emit(f"Override temizleme hatası: {e}")
+
+    def start_custom_mission(self):
+        """Gönderilen görevi başlatır (AUTO moda geçer)"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Görev başlatmak için araç bağlantısı gerekli!")
+            return
+            
+        try:
+            # Önce ARM kontrolü yap
+            if not self.vehicle.armed:
+                self.log_message_received.emit("Araç ARM edilmemiş. Önce ARM ediliyor...")
+                self.arm_vehicle()
+                
+                # ARM edilmesini bekle
+                timeout = 10
+                start_time = time.time()
+                while not self.vehicle.armed and (time.time() - start_time) < timeout:
+                    time.sleep(0.1)
+                
+                if not self.vehicle.armed:
+                    self.log_message_received.emit("ARM işlemi başarısız! Görev başlatılamadı.")
+                    return
+            
+            # AUTO moduna geç
+            self.log_message_received.emit("Görev başlatılıyor... AUTO moduna geçiliyor.")
+            self.set_vehicle_mode("AUTO")
+            
+            # Başlat butonunu güncelle
+            self.start_mission_btn.setText("GÖREV ÇALIŞIYOR...")
+            self.start_mission_btn.setStyleSheet("font-weight: bold; background-color: #4CAF50; color: white; padding: 8px; font-size: 12px;")
+            self.start_mission_btn.setEnabled(False)
+            
+            # Durdur butonunu aktif et
+            self.stop_mission_btn.setVisible(True)
+            self.stop_mission_btn.setEnabled(True)
+            
+            self.log_message_received.emit("Görev başlatıldı! Durdurmak için 'GÖREVI DURDUR' butonuna basın.")
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Görev başlatma hatası: {e}")
+
+    def stop_custom_mission(self):
+        """Çalışan görevi durdurur (MANUAL moda geçer)"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Görev durdurmak için araç bağlantısı gerekli!")
+            return
+            
+        try:
+            # Görev 2 çalışıyorsa onu durdur
+            if self.gorev2_running:
+                self.terminate_gorev2()
+                self.log_message_received.emit("Görev 2 durduruldu!")
+            
+            # MANUAL moduna geç
+            self.log_message_received.emit("Görev durduruluyor... MANUAL moduna geçiliyor.")
+            self.set_vehicle_mode("MANUAL")
+            
+            # Thruster'ları durdur
+            self.stop_thrusters()
+            
+            # Buton durumlarını güncelle
+            self.stop_mission_btn.setText("GÖREV DURDURULDU ✓")
+            self.stop_mission_btn.setStyleSheet("font-weight: bold; background-color: #795548; color: white; padding: 8px; font-size: 12px;")
+            self.stop_mission_btn.setEnabled(False)
+            
+            self.start_mission_btn.setText("GÖREV DURDURULDU")
+            self.start_mission_btn.setStyleSheet("font-weight: bold; background-color: #9E9E9E; color: white; padding: 8px; font-size: 12px;")
+            
+            self.log_message_received.emit("Görev durduruldu! Araç MANUAL modunda.")
+            
+            # 3 saniye sonra butonları sıfırla
+            QTimer.singleShot(3000, self._reset_mission_buttons)
+            
+        except Exception as e:
+            self.log_message_received.emit(f"Görev durdurma hatası: {e}")
+
+    def reset_mission_ui(self):
+        """Görev UI'sını sıfırlar"""
+        # 3 saniye sonra butonları sıfırla
+        QTimer.singleShot(3000, self._reset_mission_buttons)
+    
+    def _reset_mission_buttons(self):
+        """Görev butonlarını sıfırlar"""
+        self.send_mission_btn.setText("GÖREV GÖNDER")
+        self.send_mission_btn.setStyleSheet("font-weight: bold; background-color: #4CAF50; color: white; padding: 8px;")
+        
+        self.start_mission_btn.setText("🚀 GÖREVI BAŞLAT")
+        self.start_mission_btn.setStyleSheet("font-weight: bold; background-color: #FF9800; color: white; padding: 8px; font-size: 12px;")
+        self.start_mission_btn.setVisible(False)
+        self.start_mission_btn.setEnabled(False)
+        
+        self.stop_mission_btn.setText("⏹️ GÖREVI DURDUR")
+        self.stop_mission_btn.setStyleSheet("font-weight: bold; background-color: #F44336; color: white; padding: 8px; font-size: 12px;")
+        self.stop_mission_btn.setVisible(False)
+        self.stop_mission_btn.setEnabled(False)
+
+    def read_custom_mission_from_vehicle(self):
+        """Aractan okunan misyonu özel formatta gösterir"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("Rota okumak için araç bağlantısı gerekli.")
+            return
+        
+        # Önce normal misyon okuma işlemini yap
+        self.read_mission_from_vehicle()
+        
+        # Okunan waypoint'leri analiz et ve özel format ile logla
+        if len(self.waypoints) >= 5:
+            log_message = f"Aractan Okunan Özel Görev ({len(self.waypoints)} waypoint):\n"
+            log_message += "Parkur 1 Koordinatları:\n"
+            for i in range(min(4, len(self.waypoints))):
+                wp = self.waypoints[i]
+                log_message += f"  P{i+1}: {wp['lat']:.6f}, {wp['lng']:.6f}\n"
+            
+            if len(self.waypoints) >= 5:
+                wp = self.waypoints[4]
+                log_message += f"Parkur 2 Koordinatı:\n"
+                log_message += f"  {wp['lat']:.6f}, {wp['lng']:.6f}\n"
+            
+            if self.selected_color:
+                log_message += f"Seçili Renk: {self.selected_color['name']}"
+            
+            self.log_message_received.emit(log_message)
+
     def launch_gorev2(self):
         try:
             if not self.is_connected or not self.vehicle:
@@ -401,6 +842,12 @@ class GCSApp(QWidget):
                 self.log_message_received.emit(f"Görev 2 hedefleri haritaya eklendi: {len(self.gorev2_targets)} adet")
             except Exception as e:
                 self.log_message_received.emit(f"Görev 2 hedefleri haritaya eklenemedi: {e}")
+            
+            # Durdur butonunu Görev 2 için de aktif et
+            self.stop_mission_btn.setVisible(True)
+            self.stop_mission_btn.setEnabled(True)
+            self.stop_mission_btn.setText("⏹️ GÖREV 2'Yİ DURDUR")
+            
             self.gorev2_running = True
             self.log_message_received.emit("Görev 2 başlatılıyor (uygulama içi)...")
             self._gorev2_thread = threading.Thread(target=self._gorev2_worker, daemon=True)
@@ -537,6 +984,25 @@ class GCSApp(QWidget):
                 self.gorev2_running = False
                 return
             self.log_message_received.emit("[GÖREV 2] Kamera hazır. 'q' ile kapatabilirsiniz.")
+            # Kayıt hazırlıkları
+            recordings_dir = os.path.join(os.path.dirname(__file__), 'logs')
+            os.makedirs(recordings_dir, exist_ok=True)
+            ts = time.strftime('%Y%m%d_%H%M%S')
+            cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.mp4")
+            map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.mp4")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            ok_probe, frame_probe = cap.read()
+            if not ok_probe:
+                self.log_message_received.emit("[GÖREV 2] İlk kare okunamadı, kayıt açılamadı")
+                self.gorev2_running = False
+                cap.release()
+                return
+            h0, w0 = frame_probe.shape[:2]
+            fps_out = 10  # >=1 Hz
+            cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
+            map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
+            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path}")
+            # Okunan ilk kareyi akışa geri koyamayız, devam edelim
             while self.gorev2_running:
                 ok, frame = cap.read()
                 if not ok:
@@ -629,6 +1095,19 @@ class GCSApp(QWidget):
                     cv2.putText(frame, stage_text, (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,100,100), 2)
 
                 cv2.imshow('Görev 2 Kamera', frame)
+                # Zaman etiketi ekle ve videolara yaz
+                ts_text = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
+                frame_to_write = frame.copy()
+                cv2.putText(frame_to_write, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                overlay_map = np.zeros_like(frame)
+                overlay_map[mask_yellow > 0] = (0, 255, 255)
+                map_vis = cv2.addWeighted(frame, 0.3, overlay_map, 0.7, 0)
+                cv2.putText(map_vis, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                try:
+                    cam_writer.write(frame_to_write)
+                    map_writer.write(map_vis)
+                except Exception:
+                    pass
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     break
@@ -695,6 +1174,11 @@ class GCSApp(QWidget):
                         pass
 
             cap.release()
+            try:
+                cam_writer.release()
+                map_writer.release()
+            except Exception:
+                pass
             cv2.destroyAllWindows()
             self.log_message_received.emit("[GÖREV 2] Kapatıldı.")
         except Exception as e:
@@ -809,7 +1293,6 @@ class GCSApp(QWidget):
             # Dinleyicileri ekle
             self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
             self.vehicle.add_attribute_listener('heading', self.heading_callback)
-            self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
         except Exception as e:
             self.connection_status_changed.emit(False, f"Bağlantı hatası: {e}")
@@ -840,6 +1323,10 @@ class GCSApp(QWidget):
             QTimer.singleShot(500, self.update_motor_simulation)  # 500ms sonra da bir kez daha
             for btn in self.mode_buttons:
                 btn.setEnabled(True)
+            # Sadece send_mission_btn'i aktif et, diğer görev butonları durum bazlı aktif olacak
+            self.send_mission_btn.setEnabled(True)
+            # Telemetri CSV kaydını başlat
+            self.start_telemetry_logging()
         else:
             self.connect_button.setText("BAĞLAN")
             self.connect_button.setStyleSheet("")
@@ -848,6 +1335,12 @@ class GCSApp(QWidget):
             self.graph_timer.stop()
             for btn in self.mode_buttons:
                 btn.setEnabled(False)
+            # Tüm görev butonlarını devre dışı bırak
+            self.send_mission_btn.setEnabled(False)
+            self.start_mission_btn.setEnabled(False)
+            self.stop_mission_btn.setEnabled(False)
+            # Bağlantı kesildiğinde görev butonlarını sıfırla
+            self._reset_mission_buttons()
             self.vehicle = None
             
             # Cache'i temizle
@@ -855,6 +1348,8 @@ class GCSApp(QWidget):
             
             # Grafik verilerini temizle
             self.clear_graph_data()
+            # Telemetri CSV kaydını durdur
+            self.stop_telemetry_logging()
 
     def request_servo_output(self):
         """ArduPilot'tan SERVO_OUTPUT_RAW mesajını request et"""
@@ -871,24 +1366,22 @@ class GCSApp(QWidget):
                 self.vehicle.send_mavlink(msg)
                 self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
                 
-                # Yeni MAV_CMD_SET_MESSAGE_INTERVAL ile güvence altına al (5Hz)
+                # Ek olarak: SET_MESSAGE_INTERVAL ile mesaj ID bazlı zorla (daha güvenilir)
                 try:
                     from pymavlink import mavutil
-                    for msg_id in (36, 65):  # 36=SERVO_OUTPUT_RAW, 65=RC_CHANNELS
-                        interval_us = 200000  # 5Hz
-                        set_int = self.vehicle.message_factory.command_long_encode(
-                            self.vehicle._master.target_system,
-                            self.vehicle._master.target_component,
-                            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
-                            0,
-                            msg_id,
-                            interval_us,
-                            0, 0, 0, 0, 0
-                        )
-                        self.vehicle.send_mavlink(set_int)
-                    self.log_message_received.emit("SET_MESSAGE_INTERVAL gönderildi (SERVO_OUTPUT_RAW & RC_CHANNELS 5Hz)")
-                except Exception as e2:
-                    self.log_message_received.emit(f"SET_MESSAGE_INTERVAL başarısız: {e2}")
+                    set_interval = self.vehicle.message_factory.command_long_encode(
+                        self.vehicle._master.target_system,
+                        self.vehicle._master.target_component,
+                        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                        0,
+                        mavutil.mavlink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,
+                        200000,  # 5 Hz (µs)
+                        0, 0, 0, 0, 0
+                    )
+                    self.vehicle.send_mavlink(set_interval)
+                    self.log_message_received.emit("SET_MESSAGE_INTERVAL: SERVO_OUTPUT_RAW 5Hz ayarlandı")
+                except Exception as e_set:
+                    self.log_message_received.emit(f"SET_MESSAGE_INTERVAL gönderilemedi: {e_set}")
                 
                 # Servo function'ları da alalım - daha hızlı başlat
                 QTimer.singleShot(500, self.log_servo_functions)  # 500ms sonra (eskiden 2000ms)
@@ -975,18 +1468,6 @@ class GCSApp(QWidget):
                                 
                 self.vehicle.on_message('SERVO_OUTPUT_RAW')(servo_output_listener)
                 self.log_message_received.emit("✓ SERVO_OUTPUT_RAW listener eklendi")
-                
-                # RC_CHANNELS listener (debug ve teşhis için)
-                def rc_channels_listener(vehicle, name, message):
-                    try:
-                        chs = [message.chan1_raw, message.chan2_raw, message.chan3_raw, message.chan4_raw]
-                        self.log_message_received.emit(f"RC_CHANNELS: CH1={chs[0]}, CH2={chs[1]}, CH3={chs[2]}, CH4={chs[3]}")
-                    except Exception:
-                        pass
-                try:
-                    self.vehicle.on_message('RC_CHANNELS')(rc_channels_listener)
-                except Exception:
-                    pass
                 
                 # Periyodik channel durumu kontrol et - daha hızlı başlat
                 QTimer.singleShot(1000, self.periodic_channel_check)  # 1 saniye sonra (eskiden 5000ms)
@@ -1077,10 +1558,11 @@ class GCSApp(QWidget):
             return
             
         try:
-            # Her iki kanala da nötr PWM gönder
+            # Deniz aracı için yaygın kanal konfigürasyonları:
+            # CH1: Sağ thruster, CH3: Sol thruster veya throttle
             self.vehicle.channels.overrides['1'] = 1500  # Sağ thruster nötr
-            self.vehicle.channels.overrides['2'] = 1500  # Sol thruster nötr
-            self.log_message_received.emit("Thruster'lar durduruldu: CH1=CH2=1500μs")
+            self.vehicle.channels.overrides['3'] = 1500  # Sol thruster/throttle nötr
+            self.log_message_received.emit("Thruster'lar durduruldu: CH1=CH3=1500μs")
             
         except Exception as e:
             self.log_message_received.emit(f"Thruster durdurma hatası: {e}")
@@ -1192,6 +1674,15 @@ class GCSApp(QWidget):
             self.telemetry_values["Yaw:"].setText(f"{yaw_deg:.1f}°")
             
             self.telemetry_values["Mod:"].setText(mode)
+            
+            # ARM durumu
+            if armed is not None:
+                arm_status = "ARMED" if armed else "DISARMED"
+                arm_color = "color: green;" if armed else "color: red;"
+                self.telemetry_values["ARM Durumu:"].setText(arm_status)
+                self.telemetry_values["ARM Durumu:"].setStyleSheet(f"font-weight: bold; {arm_color}")
+            else:
+                self.telemetry_values["ARM Durumu:"].setText("N/A")
 
             if self.vehicle.battery and self.vehicle.battery.level is not None:
                 battery_level = self.vehicle.battery.level
@@ -1316,44 +1807,9 @@ class GCSApp(QWidget):
         # Cache boşsa: grafik için 0 değeri ekle ama bekle
         if not self.servo_output_cache or '1' not in self.servo_output_cache or '2' not in self.servo_output_cache:
             # Grafik için 0 değeri ekle - grafik hemen başlasın
-            # Fallback: channels.overrides veya channels'dan oku
-            try:
-                ch1 = None
-                ch2 = None
-                if hasattr(self.vehicle, 'channels') and self.vehicle.channels is not None:
-                    # overrides öncelikli
-                    ov = getattr(self.vehicle.channels, 'overrides', {}) or {}
-                    ch1 = ov.get('1', None)
-                    ch2 = ov.get('2', None)
-                    # overrides yoksa normal kanallardan dene (DroneKit bazı sürümlerde destekler)
-                    if ch1 is None:
-                        ch1 = getattr(self.vehicle.channels, 'get', lambda k, d=None: d)('1', None)
-                    if ch2 is None:
-                        ch2 = getattr(self.vehicle.channels, 'get', lambda k, d=None: d)('2', None)
-                # Eğer PWM bulunduysa hesapla ve göster
-                if ch1 is not None and ch2 is not None:
-                    def calc(p):
-                        diff = p - 1500
-                        power = max(0, min(100, abs(diff) / 5.0))
-                        if abs(diff) <= 25:
-                            return 0, "NEUTRAL"
-                        return (power, "GERİ" if diff > 25 else "İLERİ")
-                    left_power, left_dir = calc(ch2)
-                    right_power, right_dir = calc(ch1)
-                    self.thruster_left_data.append(left_power)
-                    self.thruster_right_data.append(right_power)
-                    self.thruster_labels[0].setText(f"Sol: {left_power:.0f}% {left_dir} ({ch2}μs)")
-                    self.thruster_labels[1].setText(f"Sağ: {right_power:.0f}% {right_dir} ({ch1}μs)")
-                    colorL = "gray" if left_dir=="NEUTRAL" else ("green" if left_power<30 else ("orange" if left_power<70 else "red"))
-                    colorR = "gray" if right_dir=="NEUTRAL" else ("green" if right_power<30 else ("orange" if right_power<70 else "red"))
-                    self.thruster_labels[0].setStyleSheet(f"border: 1px solid {colorL}; padding: 5px; font-size: 10px; font-weight: bold; color: {colorL};")
-                    self.thruster_labels[1].setStyleSheet(f"border: 1px solid {colorR}; padding: 5px; font-size: 10px; font-weight: bold; color: {colorR};")
-                    return
-            except Exception:
-                pass
-            # Fallback başarısızsa bekleme görünümü
             self.thruster_left_data.append(0)
             self.thruster_right_data.append(0)
+            
             for i in range(2):
                 side = "Sol" if i == 0 else "Sağ"
                 self.thruster_labels[i].setText(f"{side}: VERİ BEKLENİYOR")
@@ -1381,17 +1837,6 @@ class GCSApp(QWidget):
 
     def heading_callback(self, vehicle, attr_name, value):
         self.current_heading = value
-    
-    def mode_callback(self, vehicle, attr_name, value):
-        try:
-            mode_name = getattr(value, 'name', None) if value is not None else None
-            if mode_name:
-                # Mod etiketi ve status mesajını anında güncelle
-                self.telemetry_values["Mod:"].setText(mode_name)
-                self.status_message_received.emit(f"Mod: {mode_name}")
-                self.log_message_received.emit(f"Araç modu değişti: {mode_name}")
-        except Exception as e:
-            self.log_message_received.emit(f"Mod güncelleme hatası: {e}")
     
     def get_target_heading_from_mission(self, current_heading):
         """Mission waypoint'lerinden target heading hesapla"""
@@ -1856,6 +2301,97 @@ class GCSApp(QWidget):
             self.thruster_ax.tick_params(labelsize=5, pad=1)
             self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
             self.thruster_canvas.draw()
+
+    def start_telemetry_logging(self):
+        """Telemetri verisini CSV'ye 1 Hz ile kaydetmeye başlar."""
+        try:
+            if self._telemetry_csv_file is not None:
+                return
+            logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
+            os.makedirs(logs_dir, exist_ok=True)
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            csv_path = os.path.join(logs_dir, f'telemetry_{ts}.csv')
+            self._telemetry_csv_file = open(csv_path, 'w', newline='')
+            import io
+            if isinstance(self._telemetry_csv_file, io.TextIOBase):
+                pass
+            self._telemetry_csv_writer = csv.writer(self._telemetry_csv_file)
+            self._telemetry_csv_writer.writerow([
+                'timestamp', 'lat', 'lon', 'groundspeed_mps',
+                'roll_deg', 'pitch_deg', 'heading_deg',
+                'speed_setpoint_mps', 'heading_setpoint_deg'
+            ])
+            self._telemetry_log_timer.start(1000)
+            self.log_message_received.emit(f"Telemetri CSV kaydı başladı: {csv_path}")
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri kaydı başlatılamadı: {e}")
+
+    def stop_telemetry_logging(self):
+        """Telemetri CSV kaydını durdurur."""
+        try:
+            self._telemetry_log_timer.stop()
+            if self._telemetry_csv_file:
+                try:
+                    self._telemetry_csv_file.flush()
+                except Exception:
+                    pass
+                self._telemetry_csv_file.close()
+            self._telemetry_csv_file = None
+            self._telemetry_csv_writer = None
+            self.log_message_received.emit("Telemetri CSV kaydı durduruldu")
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri kaydı durdurulamadı: {e}")
+
+    def _log_telemetry_row(self):
+        """1 Hz telemetri satırı yazar."""
+        if not self.is_connected or not self.vehicle or self._telemetry_csv_writer is None:
+            return
+        try:
+            ts = datetime.utcnow().isoformat()
+            lat = None
+            lon = None
+            if hasattr(self.vehicle, 'location') and self.vehicle.location and hasattr(self.vehicle.location, 'global_frame'):
+                gf = self.vehicle.location.global_frame
+                lat = getattr(gf, 'lat', None)
+                lon = getattr(gf, 'lon', None)
+            groundspeed = getattr(self.vehicle, 'groundspeed', None)
+            heading = getattr(self.vehicle, 'heading', None)
+            roll_deg = None
+            pitch_deg = None
+            if hasattr(self.vehicle, 'attitude') and self.vehicle.attitude is not None:
+                try:
+                    roll_deg = math.degrees(self.vehicle.attitude.roll)
+                    pitch_deg = math.degrees(self.vehicle.attitude.pitch)
+                except Exception:
+                    pass
+            speed_setpoint = None
+            heading_setpoint = None
+            mode_name = getattr(getattr(self.vehicle, 'mode', None), 'name', None)
+            if mode_name in ["AUTO", "GUIDED", "RTL"]:
+                wpnav_speed = self.vehicle.parameters.get('WPNAV_SPEED', None)
+                wp_speed = self.vehicle.parameters.get('WP_SPEED', None)
+                speed_param = wpnav_speed if wpnav_speed is not None else wp_speed
+                if speed_param is not None:
+                    speed_setpoint = speed_param / 100.0
+                if len(self.waypoints) > 0 and isinstance(heading, (int, float)):
+                    heading_setpoint = self.get_target_heading_from_mission(heading)
+            self._telemetry_csv_writer.writerow([
+                ts,
+                f"{lat:.7f}" if isinstance(lat, float) else "",
+                f"{lon:.7f}" if isinstance(lon, float) else "",
+                f"{groundspeed:.3f}" if isinstance(groundspeed, float) else "",
+                f"{roll_deg:.2f}" if isinstance(roll_deg, float) else "",
+                f"{pitch_deg:.2f}" if isinstance(pitch_deg, float) else "",
+                f"{heading:.1f}" if isinstance(heading, (int, float)) else "",
+                f"{speed_setpoint:.3f}" if isinstance(speed_setpoint, float) else "",
+                f"{heading_setpoint:.1f}" if isinstance(heading_setpoint, (int, float)) else ""
+            ])
+            try:
+                self._telemetry_csv_file.flush()
+            except Exception:
+                pass
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri satırı yazılamadı: {e}")
 
     def load_predefined_mission(self):
         """Önceden tanımlanmış görev koordinatlarını yükler ve haritaya gönderir"""
