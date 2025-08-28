@@ -34,6 +34,7 @@ class MapBridge(QObject):
     waypoint_from_user = pyqtSignal(float, float)
     waypoint_removed = pyqtSignal(int)  # Waypoint silme sinyali
     clearMap = pyqtSignal()
+    mapReady = pyqtSignal()
 
     @pyqtSlot(float, float)
     def add_waypoint_to_ui(self, lat, lng):
@@ -44,6 +45,11 @@ class MapBridge(QObject):
     def remove_waypoint_from_ui(self, index):
         """JavaScript tarafından waypoint silindiğinde çağrılır."""
         self.waypoint_removed.emit(index)
+
+    @pyqtSlot()
+    def notify_ready(self):
+        """JavaScript tarafı hazır olduğunda çağrılır."""
+        self.mapReady.emit()
 
 class GCSApp(QWidget):
     log_message_received = pyqtSignal(str)
@@ -69,6 +75,16 @@ class GCSApp(QWidget):
             [41.0136, 28.9550]    # Beyoğlu
         ]
         
+        # Görev 2 hedef koordinatları (erkan_denendi.py ile uyumlu sıralı liste)
+        self.gorev2_targets = [
+            (40.771275, 29.437543),
+            (40.771600, 29.437900),
+            (40.771900, 29.437300),
+            (40.771400, 29.436900),
+        ]
+        # İç navigasyon için ilk hedef (geri uyum)
+        self.gorev2_target = self.gorev2_targets[0]
+        
         # Grafik verileri için deque'lar (son 100 veri noktası)
         self.graph_data_size = 100
         self.speed_data = deque(maxlen=self.graph_data_size)
@@ -81,6 +97,11 @@ class GCSApp(QWidget):
         
         # SERVO_OUTPUT_RAW cache - DroneKit channels güncellenmiyor
         self.servo_output_cache = {}
+        
+        # Harita yüklenme durumu ve bekleyen işlemler
+        self.map_ready = False
+        self._pending_waypoints = []  # [(lat, lon)]
+        self._pending_clear = False
         self.initUI()
         self.log_message_received.connect(self.update_log_safe)
         self.connection_status_changed.connect(self.on_connection_status_changed)
@@ -371,6 +392,15 @@ class GCSApp(QWidget):
             if self.gorev2_running:
                 self.log_message_received.emit("Görev 2 zaten çalışıyor.")
                 return
+            # Haritada Görev 2 hedefini göster (görev butonundaki gibi)
+            try:
+                # Mevcut waypoint'leri temizle ve tüm hedefleri sırayla ekle
+                self.clear_mission()
+                for lat, lon in self.gorev2_targets:
+                    self.add_waypoint_to_list(lat, lon)
+                self.log_message_received.emit(f"Görev 2 hedefleri haritaya eklendi: {len(self.gorev2_targets)} adet")
+            except Exception as e:
+                self.log_message_received.emit(f"Görev 2 hedefleri haritaya eklenemedi: {e}")
             self.gorev2_running = True
             self.log_message_received.emit("Görev 2 başlatılıyor (uygulama içi)...")
             self._gorev2_thread = threading.Thread(target=self._gorev2_worker, daemon=True)
@@ -385,8 +415,8 @@ class GCSApp(QWidget):
             # Parametreler (erkan_denendi.py ile uyumlu)
             PWM_STOP = 1500
             PWM_FAST = 1800
-            TARGET_LAT = 40.771275
-            TARGET_LON = 29.437543
+            TARGET_LAT = self.gorev2_target[0]
+            TARGET_LON = self.gorev2_target[1]
             obstacle_detected = False
             obstacle_avoidance_active = False
             avoidance_start_time = 0
@@ -713,12 +743,25 @@ class GCSApp(QWidget):
         self.web_view.page().setWebChannel(self.channel)
         self.channel.registerObject('py_bridge', self.bridge)
         
+        # Harita yüklenince bekleyen işlemleri uygula
+        try:
+            self.web_view.loadFinished.connect(self.on_map_load_finished)
+        except Exception:
+            pass
+        
         # JavaScript'ten gelen waypoint ekleme/silme isteklerini yakala
         self.bridge.waypoint_from_user.connect(self.add_waypoint_to_list)
         self.bridge.waypoint_removed.connect(self.remove_waypoint_from_list)
+        self.bridge.mapReady.connect(self.on_js_channel_ready)
 
         map_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'map.html'))
         self.web_view.setUrl(QUrl.fromLocalFile(map_path))
+
+    def on_js_channel_ready(self):
+        """JS tarafı QWebChannel bağlantısını kurduğunda çağrılır."""
+        self.map_ready = True
+        # Küçük bir gecikmeden sonra bekleyen işlemleri uygula
+        QTimer.singleShot(100, lambda: self.on_map_load_finished(True))
 
     def toggle_connection(self):
         if self.is_connected:
@@ -1308,8 +1351,8 @@ class GCSApp(QWidget):
         self.waypoints.append({"lat": lat, "lng": lng, "num": waypoint_num})
         self.log_message_received.emit(f"Yeni Waypoint #{waypoint_num} eklendi: {lat:.6f}, {lng:.6f}")
         
-        # Haritaya da waypoint'i çizmesi için sinyal gönder
-        self.bridge.addWaypoint.emit(lat, lng)
+        # Haritaya waypoint'i güvenli şekilde ilet
+        self._emit_add_waypoint_safe(lat, lng)
     
     def remove_waypoint_from_list(self, index):
         """Haritadan gelen waypoint silme isteğini işler."""
@@ -1377,10 +1420,26 @@ class GCSApp(QWidget):
                 cmds.add(cmd)
             
             self.log_message_received.emit(f"{len(self.waypoints)} komut araca yükleniyor...")
-            cmds.upload() 
-            self.status_message_received.emit("Rota başarıyla gönderildi!")
-            self.log_message_received.emit("Misyon araca yüklendi.")
-
+            # Yükleme ve güvenli tekrar denemesi
+            try:
+                cmds.upload()
+                self.status_message_received.emit("Rota başarıyla gönderildi!")
+                self.log_message_received.emit("Misyon araca yüklendi.")
+                return
+            except Exception as e_first:
+                self.log_message_received.emit(f"Rota yükleme ilk deneme hatası: {e_first}")
+                # Kısa bekleme sonrası bir kez daha dene
+                try:
+                    time.sleep(1.0)
+                    cmds.upload()
+                    self.status_message_received.emit("Rota başarıyla gönderildi!")
+                    self.log_message_received.emit("Misyon araca yüklendi (2. deneme).")
+                    return
+                except Exception as e_second:
+                    # İkinci deneme de başarısız → durum ve log'a hata yaz
+                    self.status_message_received.emit(f"Rota gönderme hatası: {e_second}")
+                    self.log_message_received.emit(f"HATA: Rota gönderilemedi - {e_second}")
+                    return
         except Exception as e:
             self.status_message_received.emit(f"Rota gönderme hatası: {e}")
             self.log_message_received.emit(f"HATA: Rota gönderilemedi - {e}")
@@ -1440,8 +1499,38 @@ class GCSApp(QWidget):
     
     def clear_mission(self):
         self.waypoints = []
-        self.bridge.clearMap.emit()
+        self._emit_clear_map_safe()
         self.log_message_received.emit("Rota ve harita temizlendi.")
+
+    def on_map_load_finished(self, ok):
+        # Harita sayfası yüklendikten sonra bekleyen işlemleri uygula
+        self.map_ready = bool(ok)
+        if not self.map_ready:
+            return
+        try:
+            if self._pending_clear:
+                self.bridge.clearMap.emit()
+                self._pending_clear = False
+            for lat, lon in self._pending_waypoints:
+                self.bridge.addWaypoint.emit(lat, lon)
+            if self._pending_waypoints:
+                self.log_message_received.emit(f"Harita yüklendi, {len(self._pending_waypoints)} bekleyen waypoint çizildi")
+        finally:
+            self._pending_waypoints.clear()
+
+    def _emit_add_waypoint_safe(self, lat, lon):
+        # Harita hazırsa hemen gönder, değilse kuyruğa al
+        if self.map_ready:
+            self.bridge.addWaypoint.emit(lat, lon)
+        else:
+            self._pending_waypoints.append((lat, lon))
+
+    def _emit_clear_map_safe(self):
+        # Harita hazırsa hemen temizle, değilse bayrak koy
+        if self.map_ready:
+            self.bridge.clearMap.emit()
+        else:
+            self._pending_clear = True
 
     @pyqtSlot(str)
     def on_connection_type_changed(self, text):
@@ -1693,6 +1782,9 @@ class GCSApp(QWidget):
     def load_predefined_mission(self):
         """Önceden tanımlanmış görev koordinatlarını yükler ve haritaya gönderir"""
         try:
+            # Başka bir göreve geçerken Görev 2'yi kapat
+            self.terminate_gorev2()
+            
             # Mevcut waypoint'leri temizle
             self.waypoints.clear()
             self.bridge.clearMap.emit()

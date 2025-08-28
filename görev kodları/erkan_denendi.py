@@ -23,9 +23,14 @@ CAM_INDEX = 0
 PWM_STOP = 1500
 PWM_FAST = 1800
 
-# Hedef koordinat
-TARGET_LAT = 40.771275   # Mission Planner hedef
-TARGET_LON = 29.437543   # Mission Planner hedef
+# Hedef koordinatlar (sırayla gidilecek 4 nokta)
+# Varsayılanlar örnek olarak verilmiştir; ihtiyaca göre düzenleyin
+TARGET_WAYPOINTS = [
+    (40.771275, 29.437543),
+    (40.771600, 29.437900),
+    (40.771900, 29.437300),
+    (40.771400, 29.436900),
+]
 
 # Simüle GPS (test için)
 SIMULATE_GPS = False   # True = sahte GPS kullan, False = gerçek GPS
@@ -35,6 +40,7 @@ sim_heading = 45     # Başlangıç yönü (kuzeydoğu)
 
 # Global değişkenler
 current_mode = "MANUAL"
+current_wp_index = 0  # şu an gidilen waypoint indeksi
 obstacle_detected = False
 obstacle_avoidance_active = False
 avoidance_start_time = 0
@@ -272,7 +278,11 @@ if not cap.isOpened():
     exit(1)
 
 print(f"\n📍 SİMÜLE GPS: {'AÇIK' if SIMULATE_GPS else 'KAPALI'}")
-print(f"🎯 Hedef: {TARGET_LAT:.6f}, {TARGET_LON:.6f}")
+try:
+    first_lat, first_lon = TARGET_WAYPOINTS[0]
+    print(f"🎯 İlk Hedef: {first_lat:.6f}, {first_lon:.6f}")
+except Exception:
+    print("🎯 İlk Hedef: tanımsız")
 print(f"📍 Başlangıç: {sim_lat:.6f}, {sim_lon:.6f}")
 
 print("\n🎮 KONTROLLER:")
@@ -300,8 +310,9 @@ try:
         
         if current_lat is not None:
             # Hedefe olan mesafe ve bearing
-            distance = calculate_distance(current_lat, current_lon, TARGET_LAT, TARGET_LON)
-            target_bearing = calculate_bearing(current_lat, current_lon, TARGET_LAT, TARGET_LON)
+            target_lat, target_lon = TARGET_WAYPOINTS[current_wp_index]
+            distance = calculate_distance(current_lat, current_lon, target_lat, target_lon)
+            target_bearing = calculate_bearing(current_lat, current_lon, target_lat, target_lon)
             
             gps_status = f"Lat:{current_lat:.6f}, Lon:{current_lon:.6f}"
             distance_status = f"Mesafe: {distance:.1f}m"
@@ -367,14 +378,20 @@ try:
                 
                 # Normal GPS navigasyon (engel yoksa veya manevra bitmişse)
                 if not obstacle_detected and not obstacle_avoidance_active:
-                    if distance > 2:  # hedefe 2m'den uzaksa
+                    if distance > 2:  # aktif hedefe 2m'den uzaksa
                         thr, steer = bearing_to_motor_command(target_bearing, current_heading)
                         send_rc(thr, steer)
                         update_simulated_position(thr, steer)
                     else:
-                        stop_all()
-                        print("🎯 HEDEFE VARILDI!")
-                        current_mode = "MANUAL"
+                        # Aktif waypoint'e varıldı, sıradaki hedefe geç
+                        if current_wp_index < len(TARGET_WAYPOINTS) - 1:
+                            current_wp_index += 1
+                            new_lat, new_lon = TARGET_WAYPOINTS[current_wp_index]
+                            print(f"🎯 WP{current_wp_index} varıldı. Sıradaki hedef: ({new_lat:.6f}, {new_lon:.6f})")
+                        else:
+                            stop_all()
+                            print("🎉 TÜM WAYPOINT'LERE VARILDI! Görev tamamlandı.")
+                            current_mode = "MANUAL"
                 
                 last_nav_update = time.time()
         
@@ -393,6 +410,12 @@ try:
         cv2.putText(frame, gps_status, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,0), 2)
         cv2.putText(frame, distance_status, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,255), 2)
         cv2.putText(frame, bearing_status, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
+        # Aktif waypoint göstergesi
+        try:
+            disp_lat, disp_lon = TARGET_WAYPOINTS[current_wp_index]
+            cv2.putText(frame, f"WP: {current_wp_index+1}/{len(TARGET_WAYPOINTS)} -> {disp_lat:.6f},{disp_lon:.6f}", (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,255), 2)
+        except Exception:
+            pass
         
         # Engel bilgisi
         obstacle_color = (0,0,255) if obstacle_detected else (0,255,255)

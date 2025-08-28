@@ -50,6 +50,11 @@
         new QWebChannel(qt.webChannelTransport, function (channel) {
             window.py_bridge = channel.objects.py_bridge;
 
+            // Kanal hazır bilgisini Python'a bildir
+            if (window.py_bridge && typeof window.py_bridge.notify_ready === 'function') {
+                try { window.py_bridge.notify_ready(); } catch (e) { /* no-op */ }
+            }
+
             // Python'dan gelen araç pozisyonu güncellemesini dinle
             py_bridge.updateVehiclePosition.connect(function(lat, lng, heading) {
                 if (!vehicleMarker) {
