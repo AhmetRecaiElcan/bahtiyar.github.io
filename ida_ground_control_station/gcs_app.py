@@ -551,7 +551,8 @@ class GCSApp(QWidget):
             ts = time.strftime('%Y%m%d_%H%M%S')
             cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.mp4")
             map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.mp4")
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            # H.264 codec kullan (VLC uyumlu)
+            fourcc = cv2.VideoWriter_fourcc(*'H264')
             ok_probe, frame_probe = cap.read()
             if not ok_probe:
                 self.log_message_received.emit("[GÖREV 2] İlk kare okunamadı, kayıt açılamadı")
@@ -562,7 +563,7 @@ class GCSApp(QWidget):
             fps_out = 10  # >=1 Hz
             cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
             map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
-            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path}")
+            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path} (H.264 codec)")
             # Okunan ilk kareyi akışa geri koyamayız, devam edelim
             while self.gorev2_running:
                 ok, frame = cap.read()
@@ -657,7 +658,7 @@ class GCSApp(QWidget):
 
                 cv2.imshow('Görev 2 Kamera', frame)
                 # Zaman etiketi ekle ve videolara yaz
-                ts_text = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
+                ts_text = datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
                 frame_to_write = frame.copy()
                 cv2.putText(frame_to_write, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
                 overlay_map = np.zeros_like(frame)
@@ -1890,7 +1891,7 @@ class GCSApp(QWidget):
         if not self.is_connected or not self.vehicle or self._telemetry_csv_writer is None:
             return
         try:
-            ts = datetime.utcnow().isoformat()
+            ts = datetime.now(datetime.UTC).isoformat()
             lat = None
             lon = None
             if hasattr(self.vehicle, 'location') and self.vehicle.location and hasattr(self.vehicle.location, 'global_frame'):
