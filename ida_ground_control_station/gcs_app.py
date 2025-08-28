@@ -4,6 +4,8 @@ import time
 import threading
 import math
 from collections import deque
+import csv
+from datetime import datetime
 from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSignal, QObject, pyqtSlot, QDateTime
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QLabel,
                              QTextEdit, QHBoxLayout, QMessageBox, QGridLayout,
@@ -102,6 +104,12 @@ class GCSApp(QWidget):
         self.map_ready = False
         self._pending_waypoints = []  # [(lat, lon)]
         self._pending_clear = False
+        
+        # Telemetri CSV kaydı için durum
+        self._telemetry_csv_file = None
+        self._telemetry_csv_writer = None
+        self._telemetry_log_timer = QTimer(self)
+        self._telemetry_log_timer.timeout.connect(self._log_telemetry_row)
         self.initUI()
         self.log_message_received.connect(self.update_log_safe)
         self.connection_status_changed.connect(self.on_connection_status_changed)
@@ -537,6 +545,25 @@ class GCSApp(QWidget):
                 self.gorev2_running = False
                 return
             self.log_message_received.emit("[GÖREV 2] Kamera hazır. 'q' ile kapatabilirsiniz.")
+            # Kayıt hazırlıkları
+            recordings_dir = os.path.join(os.path.dirname(__file__), 'logs')
+            os.makedirs(recordings_dir, exist_ok=True)
+            ts = time.strftime('%Y%m%d_%H%M%S')
+            cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.mp4")
+            map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.mp4")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            ok_probe, frame_probe = cap.read()
+            if not ok_probe:
+                self.log_message_received.emit("[GÖREV 2] İlk kare okunamadı, kayıt açılamadı")
+                self.gorev2_running = False
+                cap.release()
+                return
+            h0, w0 = frame_probe.shape[:2]
+            fps_out = 10  # >=1 Hz
+            cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
+            map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
+            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path}")
+            # Okunan ilk kareyi akışa geri koyamayız, devam edelim
             while self.gorev2_running:
                 ok, frame = cap.read()
                 if not ok:
@@ -629,6 +656,19 @@ class GCSApp(QWidget):
                     cv2.putText(frame, stage_text, (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,100,100), 2)
 
                 cv2.imshow('Görev 2 Kamera', frame)
+                # Zaman etiketi ekle ve videolara yaz
+                ts_text = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
+                frame_to_write = frame.copy()
+                cv2.putText(frame_to_write, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                overlay_map = np.zeros_like(frame)
+                overlay_map[mask_yellow > 0] = (0, 255, 255)
+                map_vis = cv2.addWeighted(frame, 0.3, overlay_map, 0.7, 0)
+                cv2.putText(map_vis, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                try:
+                    cam_writer.write(frame_to_write)
+                    map_writer.write(map_vis)
+                except Exception:
+                    pass
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     break
@@ -695,6 +735,11 @@ class GCSApp(QWidget):
                         pass
 
             cap.release()
+            try:
+                cam_writer.release()
+                map_writer.release()
+            except Exception:
+                pass
             cv2.destroyAllWindows()
             self.log_message_received.emit("[GÖREV 2] Kapatıldı.")
         except Exception as e:
@@ -839,6 +884,8 @@ class GCSApp(QWidget):
             QTimer.singleShot(500, self.update_motor_simulation)  # 500ms sonra da bir kez daha
             for btn in self.mode_buttons:
                 btn.setEnabled(True)
+            # Telemetri CSV kaydını başlat
+            self.start_telemetry_logging()
         else:
             self.connect_button.setText("BAĞLAN")
             self.connect_button.setStyleSheet("")
@@ -854,6 +901,8 @@ class GCSApp(QWidget):
             
             # Grafik verilerini temizle
             self.clear_graph_data()
+            # Telemetri CSV kaydını durdur
+            self.stop_telemetry_logging()
 
     def request_servo_output(self):
         """ArduPilot'tan SERVO_OUTPUT_RAW mesajını request et"""
@@ -869,6 +918,23 @@ class GCSApp(QWidget):
                 )
                 self.vehicle.send_mavlink(msg)
                 self.log_message_received.emit("SERVO_OUTPUT_RAW stream başlatıldı (2Hz)")
+                
+                # Ek olarak: SET_MESSAGE_INTERVAL ile mesaj ID bazlı zorla (daha güvenilir)
+                try:
+                    from pymavlink import mavutil
+                    set_interval = self.vehicle.message_factory.command_long_encode(
+                        self.vehicle._master.target_system,
+                        self.vehicle._master.target_component,
+                        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                        0,
+                        mavutil.mavlink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,
+                        200000,  # 5 Hz (µs)
+                        0, 0, 0, 0, 0
+                    )
+                    self.vehicle.send_mavlink(set_interval)
+                    self.log_message_received.emit("SET_MESSAGE_INTERVAL: SERVO_OUTPUT_RAW 5Hz ayarlandı")
+                except Exception as e_set:
+                    self.log_message_received.emit(f"SET_MESSAGE_INTERVAL gönderilemedi: {e_set}")
                 
                 # Servo function'ları da alalım - daha hızlı başlat
                 QTimer.singleShot(500, self.log_servo_functions)  # 500ms sonra (eskiden 2000ms)
@@ -1778,6 +1844,97 @@ class GCSApp(QWidget):
             self.thruster_ax.tick_params(labelsize=5, pad=1)
             self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
             self.thruster_canvas.draw()
+
+    def start_telemetry_logging(self):
+        """Telemetri verisini CSV'ye 1 Hz ile kaydetmeye başlar."""
+        try:
+            if self._telemetry_csv_file is not None:
+                return
+            logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
+            os.makedirs(logs_dir, exist_ok=True)
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            csv_path = os.path.join(logs_dir, f'telemetry_{ts}.csv')
+            self._telemetry_csv_file = open(csv_path, 'w', newline='')
+            import io
+            if isinstance(self._telemetry_csv_file, io.TextIOBase):
+                pass
+            self._telemetry_csv_writer = csv.writer(self._telemetry_csv_file)
+            self._telemetry_csv_writer.writerow([
+                'timestamp', 'lat', 'lon', 'groundspeed_mps',
+                'roll_deg', 'pitch_deg', 'heading_deg',
+                'speed_setpoint_mps', 'heading_setpoint_deg'
+            ])
+            self._telemetry_log_timer.start(1000)
+            self.log_message_received.emit(f"Telemetri CSV kaydı başladı: {csv_path}")
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri kaydı başlatılamadı: {e}")
+
+    def stop_telemetry_logging(self):
+        """Telemetri CSV kaydını durdurur."""
+        try:
+            self._telemetry_log_timer.stop()
+            if self._telemetry_csv_file:
+                try:
+                    self._telemetry_csv_file.flush()
+                except Exception:
+                    pass
+                self._telemetry_csv_file.close()
+            self._telemetry_csv_file = None
+            self._telemetry_csv_writer = None
+            self.log_message_received.emit("Telemetri CSV kaydı durduruldu")
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri kaydı durdurulamadı: {e}")
+
+    def _log_telemetry_row(self):
+        """1 Hz telemetri satırı yazar."""
+        if not self.is_connected or not self.vehicle or self._telemetry_csv_writer is None:
+            return
+        try:
+            ts = datetime.utcnow().isoformat()
+            lat = None
+            lon = None
+            if hasattr(self.vehicle, 'location') and self.vehicle.location and hasattr(self.vehicle.location, 'global_frame'):
+                gf = self.vehicle.location.global_frame
+                lat = getattr(gf, 'lat', None)
+                lon = getattr(gf, 'lon', None)
+            groundspeed = getattr(self.vehicle, 'groundspeed', None)
+            heading = getattr(self.vehicle, 'heading', None)
+            roll_deg = None
+            pitch_deg = None
+            if hasattr(self.vehicle, 'attitude') and self.vehicle.attitude is not None:
+                try:
+                    roll_deg = math.degrees(self.vehicle.attitude.roll)
+                    pitch_deg = math.degrees(self.vehicle.attitude.pitch)
+                except Exception:
+                    pass
+            speed_setpoint = None
+            heading_setpoint = None
+            mode_name = getattr(getattr(self.vehicle, 'mode', None), 'name', None)
+            if mode_name in ["AUTO", "GUIDED", "RTL"]:
+                wpnav_speed = self.vehicle.parameters.get('WPNAV_SPEED', None)
+                wp_speed = self.vehicle.parameters.get('WP_SPEED', None)
+                speed_param = wpnav_speed if wpnav_speed is not None else wp_speed
+                if speed_param is not None:
+                    speed_setpoint = speed_param / 100.0
+                if len(self.waypoints) > 0 and isinstance(heading, (int, float)):
+                    heading_setpoint = self.get_target_heading_from_mission(heading)
+            self._telemetry_csv_writer.writerow([
+                ts,
+                f"{lat:.7f}" if isinstance(lat, float) else "",
+                f"{lon:.7f}" if isinstance(lon, float) else "",
+                f"{groundspeed:.3f}" if isinstance(groundspeed, float) else "",
+                f"{roll_deg:.2f}" if isinstance(roll_deg, float) else "",
+                f"{pitch_deg:.2f}" if isinstance(pitch_deg, float) else "",
+                f"{heading:.1f}" if isinstance(heading, (int, float)) else "",
+                f"{speed_setpoint:.3f}" if isinstance(speed_setpoint, float) else "",
+                f"{heading_setpoint:.1f}" if isinstance(heading_setpoint, (int, float)) else ""
+            ])
+            try:
+                self._telemetry_csv_file.flush()
+            except Exception:
+                pass
+        except Exception as e:
+            self.log_message_received.emit(f"Telemetri satırı yazılamadı: {e}")
 
     def load_predefined_mission(self):
         """Önceden tanımlanmış görev koordinatlarını yükler ve haritaya gönderir"""
