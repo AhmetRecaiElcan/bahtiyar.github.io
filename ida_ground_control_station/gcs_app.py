@@ -539,36 +539,66 @@ class GCSApp(QWidget):
                         return False
                 return True
 
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                self.log_message_received.emit("[GÖREV 2] Kamera açılamadı")
-                self.gorev2_running = False
-                return
-            self.log_message_received.emit("[GÖREV 2] Kamera hazır. 'q' ile kapatabilirsiniz.")
-            # Kayıt hazırlıkları
-            recordings_dir = os.path.join(os.path.dirname(__file__), 'logs')
-            os.makedirs(recordings_dir, exist_ok=True)
-            ts = time.strftime('%Y%m%d_%H%M%S')
-            cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.avi")
-            map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.avi")
-            # XVID codec kullan (güvenilir ve uyumlu)
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            ok_probe, frame_probe = cap.read()
-            if not ok_probe:
-                self.log_message_received.emit("[GÖREV 2] İlk kare okunamadı, kayıt açılamadı")
-                self.gorev2_running = False
-                cap.release()
-                return
-            h0, w0 = frame_probe.shape[:2]
-            fps_out = 10  # >=1 Hz
-            cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
-            map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
-            self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path} (XVID codec)")
-            # Okunan ilk kareyi akışa geri koyamayız, devam edelim
-            while self.gorev2_running:
-                ok, frame = cap.read()
-                if not ok:
+            # Kamera açma denemesi - farklı indeksler dene
+            cap = None
+            for camera_index in [0, 1, 2]:
+                try:
+                    cap = cv2.VideoCapture(camera_index)
+                    if cap.isOpened():
+                        # Test frame oku
+                        ret, test_frame = cap.read()
+                        if ret and test_frame is not None:
+                            self.log_message_received.emit(f"[GÖREV 2] Kamera {camera_index} başarıyla açıldı")
+                            break
+                        else:
+                            cap.release()
+                            cap = None
+                except Exception as e:
+                    if cap:
+                        cap.release()
+                    cap = None
                     continue
+            
+            if not cap or not cap.isOpened():
+                self.log_message_received.emit("[GÖREV 2] Hiçbir kamera açılamadı - kayıt olmadan devam ediliyor")
+                cap = None
+            else:
+                self.log_message_received.emit("[GÖREV 2] Kamera hazır. 'q' ile kapatabilirsiniz.")
+            # Kayıt hazırlıkları (sadece kamera varsa)
+            cam_writer = None
+            map_writer = None
+            h0, w0 = 480, 640  # Varsayılan boyutlar
+            
+            if cap is not None:
+                recordings_dir = os.path.join(os.path.dirname(__file__), 'logs')
+                os.makedirs(recordings_dir, exist_ok=True)
+                ts = time.strftime('%Y%m%d_%H%M%S')
+                cam_path = os.path.join(recordings_dir, f"camera_processed_{ts}.avi")
+                map_path = os.path.join(recordings_dir, f"local_obstacle_map_{ts}.avi")
+                # XVID codec kullan (güvenilir ve uyumlu)
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                ok_probe, frame_probe = cap.read()
+                if ok_probe and frame_probe is not None:
+                    h0, w0 = frame_probe.shape[:2]
+                    fps_out = 10  # >=1 Hz
+                    cam_writer = cv2.VideoWriter(cam_path, fourcc, fps_out, (w0, h0))
+                    map_writer = cv2.VideoWriter(map_path, fourcc, fps_out, (w0, h0))
+                    self.log_message_received.emit(f"[GÖREV 2] Kayıt başlatıldı: {cam_path} ve {map_path} (XVID codec)")
+                else:
+                    self.log_message_received.emit("[GÖREV 2] Kamera kare okunamadı - kayıt olmadan devam ediliyor")
+            else:
+                self.log_message_received.emit("[GÖREV 2] Kamera yok - kayıt olmadan devam ediliyor")
+            while self.gorev2_running:
+                # Kamera varsa frame oku, yoksa devam et
+                if cap is not None:
+                    ok, frame = cap.read()
+                    if not ok:
+                        continue
+                else:
+                    # Kamera yoksa simüle frame oluştur
+                    frame = np.zeros((h0, w0, 3), dtype=np.uint8)
+                    cv2.putText(frame, "KAMERA YOK - SIMULASYON", (50, h0//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+                    time.sleep(0.1)  # 100ms bekle
                 # GPS/Heading oku
                 current_lat = None
                 current_lon = None
@@ -657,19 +687,20 @@ class GCSApp(QWidget):
                     cv2.putText(frame, stage_text, (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,100,100), 2)
 
                 cv2.imshow('Görev 2 Kamera', frame)
-                # Zaman etiketi ekle ve videolara yaz
-                ts_text = datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
-                frame_to_write = frame.copy()
-                cv2.putText(frame_to_write, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
-                overlay_map = np.zeros_like(frame)
-                overlay_map[mask_yellow > 0] = (0, 255, 255)
-                map_vis = cv2.addWeighted(frame, 0.3, overlay_map, 0.7, 0)
-                cv2.putText(map_vis, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
-                try:
-                    cam_writer.write(frame_to_write)
-                    map_writer.write(map_vis)
-                except Exception:
-                    pass
+                # Zaman etiketi ekle ve videolara yaz (sadece writer varsa)
+                if cam_writer is not None and map_writer is not None:
+                    ts_text = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + 'Z'
+                    frame_to_write = frame.copy()
+                    cv2.putText(frame_to_write, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                    overlay_map = np.zeros_like(frame)
+                    overlay_map[mask_yellow > 0] = (0, 255, 255)
+                    map_vis = cv2.addWeighted(frame, 0.3, overlay_map, 0.7, 0)
+                    cv2.putText(map_vis, f"TS: {ts_text}", (10, h0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+                    try:
+                        cam_writer.write(frame_to_write)
+                        map_writer.write(map_vis)
+                    except Exception:
+                        pass
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     break
@@ -735,10 +766,13 @@ class GCSApp(QWidget):
                     except Exception:
                         pass
 
-            cap.release()
+            if cap is not None:
+                cap.release()
             try:
-                cam_writer.release()
-                map_writer.release()
+                if cam_writer is not None:
+                    cam_writer.release()
+                if map_writer is not None:
+                    map_writer.release()
             except Exception:
                 pass
             cv2.destroyAllWindows()
@@ -1891,7 +1925,7 @@ class GCSApp(QWidget):
         if not self.is_connected or not self.vehicle or self._telemetry_csv_writer is None:
             return
         try:
-            ts = datetime.now(datetime.UTC).isoformat()
+            ts = datetime.utcnow().isoformat()
             lat = None
             lon = None
             if hasattr(self.vehicle, 'location') and self.vehicle.location and hasattr(self.vehicle.location, 'global_frame'):
