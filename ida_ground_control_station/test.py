@@ -141,25 +141,27 @@ def main():
         # Dosyayı çalıştır
         print("⚡ Python dosyası başlatılıyor...")
         
-        # Subprocess ile çalıştır
+        # Subprocess ile çalıştır (Python 3.6 uyumlu)
         process = subprocess.Popen(
             [sys.executable, erkan_file],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,  # text=True yerine
+            bufsize=1
         )
         
         print("✅ Process başlatıldı (PID: {})".format(process.pid))
         print("📡 Çıktılar dinleniyor...")
         print("=" * 60)
         
-        # Çıktıları gerçek zamanlı oku
+        # Çıktıları gerçek zamanlı oku (Python 3.6 uyumlu)
         def read_output(pipe, prefix):
-            for line in pipe:
-                if line.strip():
-                    print(f"{prefix} {line.strip()}")
+            try:
+                for line in iter(pipe.readline, ''):
+                    if line.strip():
+                        print(f"{prefix} {line.strip()}")
+            except Exception as e:
+                print(f"⚠️ Çıktı okuma hatası: {e}")
         
         # stdout ve stderr'i ayrı thread'lerde oku
         stdout_thread = threading.Thread(target=read_output, args=(process.stdout, "📤"))
@@ -173,6 +175,10 @@ def main():
         
         # Process'in bitmesini bekle
         return_code = process.wait()
+        
+        # Thread'leri durdur
+        stdout_thread.join(timeout=1)
+        stderr_thread.join(timeout=1)
         
         print("=" * 60)
         if return_code == 0:
