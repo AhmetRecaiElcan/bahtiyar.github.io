@@ -3380,37 +3380,10 @@ class GCSApp(QWidget):
                 return
             
             # Gerçek Jetson Nano bağlantısı için bu fonksiyonu kullanın
-            # self._run_ssh_command_on_jetson(test_file_path)
+            self._run_ssh_command_on_jetson(test_file_path)
             
-            # Şimdilik simülasyon modunda çalışıyor
-            self.log_message_received.emit("🔧 Test dosyası Jetson Nano'ya kopyalanıyor...")
-            time.sleep(2)
-            
-            self.log_message_received.emit("⚡ Test dosyası çalıştırılıyor...")
-            time.sleep(3)
-            
-            # Test sonuçlarını simüle et
-            test_results = [
-                "🚁 JETSON NANO TEST BAŞLATILDI",
-                "📊 SİSTEM BİLGİLERİ:",
-                "   CPU: ARM (Jetson Nano)",
-                "   RAM: 4096 MB",
-                "1. Sistem başlatıldı ✓",
-                "2. Python ortamı kontrol edildi ✓",
-                "3. Dosya sistemi erişimi test edildi ✓",
-                "4. USB bağlantısı kontrol ediliyor...",
-                "5. Pixhawk 2.4.8 iletişimi test ediliyor...",
-                "6. Telemetri verisi alınıyor...",
-                "7. Test tamamlandı ✓",
-                "✅ TEST BAŞARIYLA TAMAMLANDI!",
-                "🎯 Jetson Nano hazır durumda."
-            ]
-            
-            for result in test_results:
-                self.log_message_received.emit(result)
-                time.sleep(0.5)
-            
-            self.log_message_received.emit("🎉 Test başarıyla tamamlandı!")
+            # SSH bağlantısı üzerinden test çalıştırılıyor
+            # Test sonuçları SSH üzerinden gerçek zamanlı olarak alınacak
             
         except Exception as e:
             self.log_message_received.emit(f"❌ Test çalıştırma hatası: {str(e)}")
@@ -3424,9 +3397,9 @@ class GCSApp(QWidget):
             import paramiko
             
             # Jetson Nano bağlantı bilgileri
-            jetson_host = "192.168.1.100"  # Jetson Nano IP adresi
-            jetson_user = "nvidia"         # Jetson Nano kullanıcı adı
-            jetson_password = "password"   # Jetson Nano şifresi
+            jetson_host = "192.168.1.203"  # Jetson Nano IP adresi
+            jetson_user = "honorable"      # Jetson Nano kullanıcı adı
+            jetson_password = "2004"   # Jetson Nano şifresi (kendi şifrenizi yazın)
             
             self.log_message_received.emit(f"🔗 Jetson Nano'ya bağlanılıyor: {jetson_host}")
             

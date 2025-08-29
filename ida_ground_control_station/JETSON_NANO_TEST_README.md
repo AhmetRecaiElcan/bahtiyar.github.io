@@ -31,9 +31,9 @@ sudo systemctl start ssh
 `gcs_app.py` dosyasında `_run_ssh_command_on_jetson` fonksiyonunda bağlantı bilgilerini güncelleyin:
 
 ```python
-jetson_host = "192.168.1.100"  # Jetson Nano IP adresi
-jetson_user = "nvidia"         # Jetson Nano kullanıcı adı
-jetson_password = "password"   # Jetson Nano şifresi
+jetson_host = "192.168.1.203"  # Jetson Nano IP adresi
+jetson_user = "honorable"      # Jetson Nano kullanıcı adı
+jetson_password = "your_password_here"   # Jetson Nano şifresi (kendi şifrenizi yazın)
 ```
 
 ## Kullanım
