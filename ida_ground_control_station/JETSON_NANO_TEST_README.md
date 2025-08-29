@@ -93,6 +93,17 @@ USB bağlantısı için `_run_usb_command_on_jetson` fonksiyonunu geliştirin:
 - Dosya sistemi erişimini test eder
 - USB bağlantısını kontrol eder
 - Pixhawk 2.4.8 iletişimini test eder
+- **erkan_denendi.py dosyasını otomatik olarak çalıştırır**
+
+## erkan_denendi.py Çalıştırma
+
+Test butonuna tıkladığınızda:
+
+1. **test.py** dosyası Jetson Nano'ya kopyalanır
+2. **erkan_denendi.py** dosyası da kopyalanır
+3. **test.py** çalıştırılır
+4. **test.py** otomatik olarak **erkan_denendi.py**'yi çalıştırır
+5. **erkan_denendi.py** çıktıları gerçek zamanlı olarak görüntülenir
 
 ## Hata Ayıklama
 

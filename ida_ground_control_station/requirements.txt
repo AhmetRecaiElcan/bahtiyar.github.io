@@ -30,4 +30,9 @@ numpy>=1.21.0
 # threading, time - Python built-in modüller
 
 # SSH bağlantısı için (Jetson Nano test fonksiyonu)
-paramiko>=2.8.0 
+paramiko>=2.8.0
+
+# Jetson Nano test için gerekli kütüphaneler
+opencv-python>=4.5.0
+numpy>=1.21.0
+dronekit>=2.9.0 

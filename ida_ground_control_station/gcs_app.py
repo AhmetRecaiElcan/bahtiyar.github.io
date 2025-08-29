@@ -3373,6 +3373,7 @@ class GCSApp(QWidget):
         try:
             # Test dosyasının yolu
             test_file_path = os.path.join(os.path.dirname(__file__), 'test.py')
+            erkan_file_path = os.path.join(os.path.dirname(__file__), 'görev kodları', 'erkan_denendi.py')
             
             if not os.path.exists(test_file_path):
                 self.log_message_received.emit(f"❌ Test dosyası bulunamadı: {test_file_path}")
@@ -3410,14 +3411,24 @@ class GCSApp(QWidget):
             
             # Test dosyasını Jetson Nano'ya kopyala
             sftp = ssh.open_sftp()
-            remote_path = f"/home/{jetson_user}/test.py"
-            sftp.put(test_file_path, remote_path)
+            remote_test_path = f"/home/{jetson_user}/test.py"
+            sftp.put(test_file_path, remote_test_path)
+            
+            # erkan_denendi.py dosyasını da kopyala (eğer varsa)
+            erkan_file_path = os.path.join(os.path.dirname(__file__), 'görev kodları', 'erkan_denendi.py')
+            if os.path.exists(erkan_file_path):
+                remote_erkan_path = f"/home/{jetson_user}/erkan_denendi.py"
+                sftp.put(erkan_file_path, remote_erkan_path)
+                self.log_message_received.emit("📁 erkan_denendi.py dosyası da kopyalandı")
+            else:
+                self.log_message_received.emit("⚠️ erkan_denendi.py dosyası bulunamadı")
+            
             sftp.close()
             
             self.log_message_received.emit("📁 Test dosyası kopyalandı")
             
             # Test dosyasını çalıştır
-            command = f"python3 {remote_path}"
+            command = f"python3 {remote_test_path}"
             stdin, stdout, stderr = ssh.exec_command(command)
             
             # Çıktıyı oku ve log'a yaz
