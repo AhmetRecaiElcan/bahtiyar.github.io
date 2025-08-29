@@ -15,7 +15,7 @@ import numpy as np
 from dronekit import connect, VehicleMode
 
 # Ayarlar
-CONNECTION = 'COM4'
+CONNECTION = '/dev/ttyACM0'
 BAUD = 115200
 CAM_INDEX = 0
 
