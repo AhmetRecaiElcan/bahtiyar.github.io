@@ -78,12 +78,17 @@ def main():
         print(f"⚠️ Dizin listesi alınamadı: {e}")
     
     # Olası konumlar (Türkçe karakter sorunu için alternatif yollar)
+    current_dir = os.getcwd()
+    parent_dir = os.path.dirname(current_dir)  # Bir üst dizin
+    
     possible_paths = [
         "erkan_denendi.py",
         "../görev kodları/erkan_denendi.py",
         "görev kodları/erkan_denendi.py",
         "../gorev_kodlari/erkan_denendi.py",
         "gorev_kodlari/erkan_denendi.py",
+        os.path.join(parent_dir, "görev kodları", "erkan_denendi.py"),  # Ana workspace'de
+        os.path.join(parent_dir, "gorev_kodlari", "erkan_denendi.py"),  # Ana workspace'de
         "/home/honorable/erkan_denendi.py",
         "/home/nvidia/erkan_denendi.py"
     ]

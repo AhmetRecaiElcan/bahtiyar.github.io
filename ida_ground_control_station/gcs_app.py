@@ -3416,11 +3416,15 @@ class GCSApp(QWidget):
             
             # erkan_denendi.py dosyasını da kopyala (eğer varsa)
             # Türkçe karakter sorunu için alternatif yollar dene
+            current_dir = os.path.dirname(__file__)
+            parent_dir = os.path.dirname(current_dir)  # Bir üst dizin (ana workspace)
+            
             possible_erkan_paths = [
-                os.path.join(os.path.dirname(__file__), 'görev kodları', 'erkan_denendi.py'),
-                os.path.join(os.path.dirname(__file__), 'gorev_kodlari', 'erkan_denendi.py'),
-                os.path.join(os.path.dirname(__file__), 'gorev_kodlari', 'erkan_denendi.py'),
-                os.path.join(os.path.dirname(__file__), 'erkan_denendi.py')
+                os.path.join(current_dir, 'görev kodları', 'erkan_denendi.py'),
+                os.path.join(current_dir, 'gorev_kodlari', 'erkan_denendi.py'),
+                os.path.join(parent_dir, 'görev kodları', 'erkan_denendi.py'),  # Ana workspace'de
+                os.path.join(parent_dir, 'gorev_kodlari', 'erkan_denendi.py'),  # Ana workspace'de
+                os.path.join(current_dir, 'erkan_denendi.py')
             ]
             
             # Debug: Mevcut dosyaları listele
