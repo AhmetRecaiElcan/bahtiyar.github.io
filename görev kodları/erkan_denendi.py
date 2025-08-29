@@ -60,18 +60,23 @@ def detect_obstacle_position(roi, mask_yellow):
     center_density = np.count_nonzero(center_part) / (center_part.shape[0] * center_part.shape[1])
     right_density = np.count_nonzero(right_part) / (right_part.shape[0] * right_part.shape[1])
     
-    print(f"🔍 Engel yoğunluğu - Sol: {left_density*100:.1f}%, Orta: {center_density*100:.1f}%, Sağ: {right_density*100:.1f}%")
+    print(f"🔍 Engel yoğunluğu - Sol: {left_density*100:.2f}%, Orta: {center_density*100:.2f}%, Sağ: {right_density*100:.2f}%")
+    print(f"📊 Detay: Sol={left_density:.4f}, Orta={center_density:.4f}, Sağ={right_density:.4f}")
     
     # En yoğun bölgeyi bul
     max_density = max(left_density, center_density, right_density)
     
     if max_density < 0.02:  # eşik düşürüldü (0.05 → 0.02)
+        print(f"❌ Engel yok - En yüksek yoğunluk: {max_density*100:.2f}% (eşik: 2%)")
         return "none"
     elif left_density == max_density:
+        print(f"📍 Engel SOL tarafta - Yoğunluk: {left_density*100:.2f}%")
         return "left"
     elif right_density == max_density:
+        print(f"📍 Engel SAĞ tarafta - Yoğunluk: {right_density*100:.2f}%")
         return "right"
     else:
+        print(f"📍 Engel ORTADA - Yoğunluk: {center_density*100:.2f}%")
         return "center"
 
 def obstacle_avoidance_maneuver(obstacle_position):
@@ -343,14 +348,18 @@ try:
         # Engel konumu tespit
         obstacle_position = detect_obstacle_position(roi, mask_yellow)
         
+        # Detaylı engel algılama log'ları
+        print(f"🔍 ENGEL ALGILAMA: {yellow_ratio*100:.2f}% | Konum: {obstacle_position} | Eşik: 15% | ROI: {rw}x{rh}")
+        
         # Engel kontrolü
         if yellow_ratio > 0.15:
             if not obstacle_detected:
-                print(f"🚨 ENGEL ALGILANDI! {yellow_ratio*100:.1f}% - Konum: {obstacle_position}")
+                print(f"🚨 ENGEL ALGILANDI! {yellow_ratio*100:.2f}% - Konum: {obstacle_position}")
+                print(f"📊 Detay: ROI boyutu {rw}x{rh}, Sarı piksel oranı: {yellow_ratio:.4f}")
                 obstacle_detected = True
         else:
             if obstacle_detected:
-                print("✅ ENGEL TEMİZLENDİ")
+                print(f"✅ ENGEL TEMİZLENDİ - Son oran: {yellow_ratio*100:.2f}%")
             obstacle_detected = False
             # Engel yoksa manevraya son ver
             if obstacle_avoidance_active:
