@@ -25,11 +25,782 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.animation import FuncAnimation
 
 # Pixhawk bağlantısı için import edilecek (bu satırları aktif edin)
-from dronekit import connect, VehicleMode, LocationGlobalRelative, APIException
+from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, APIException
 import serial.tools.list_ports
 
 # Attitude Indicator import
 from attitude_indicator import AttitudeIndicator
+
+# Otonom kayıt sistemi için OpenCV
+try:
+    import cv2
+    import numpy as np
+    OPENCV_AVAILABLE = True
+except ImportError:
+    OPENCV_AVAILABLE = False
+    print("OpenCV bulunamadı. Kamera kayıt özelliği devre dışı.")
+
+class AutonomousRecordingSystem:
+    """Otonom modda kayıt yapma sistemi"""
+    
+    def __init__(self, gcs_app):
+        self.gcs_app = gcs_app
+        self.is_recording = False
+        self.recording_start_time = None
+        self.recording_dir = None
+        
+        # Video kayıt için
+        self.camera_capture = None
+        self.camera_writer = None
+        self.map_writer = None
+        
+        # Telemetri kayıt için
+        self.telemetry_csv_file = None
+        self.telemetry_csv_writer = None
+        
+        # Kayıt timer'ları
+        self.recording_timer = QTimer()
+        self.recording_timer.timeout.connect(self._record_frame)
+        self.recording_timer.setInterval(1000)  # 1 Hz
+        
+        # Logs dizini oluştur
+        self.logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
+        os.makedirs(self.logs_dir, exist_ok=True)
+    
+    def start_recording(self):
+        """Otonom kayıt sistemini başlatır"""
+        if self.is_recording:
+            return
+        
+        if not OPENCV_AVAILABLE:
+            self.gcs_app.log_message_received.emit("❌ OpenCV bulunamadı! Kamera kayıt özelliği devre dışı.")
+            return
+        
+        try:
+            # Kayıt dizini oluştur
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            self.recording_dir = os.path.join(self.logs_dir, f'autonomous_recording_{timestamp}')
+            os.makedirs(self.recording_dir, exist_ok=True)
+            
+            # Kamera başlat
+            self.camera_capture = cv2.VideoCapture(0)
+            if not self.camera_capture.isOpened():
+                self.gcs_app.log_message_received.emit("❌ Kamera açılamadı!")
+                return
+            
+            # Test frame al
+            ret, test_frame = self.camera_capture.read()
+            if not ret:
+                self.gcs_app.log_message_received.emit("❌ Kamera test frame'i alınamadı!")
+                return
+            
+            height, width = test_frame.shape[:2]
+            
+            # Video writer'ları oluştur
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            
+            # 1. İşlenmiş kamera verisi (tespit ve takip sonuçları ile)
+            camera_path = os.path.join(self.recording_dir, 'processed_camera_data.mp4') 
+            self.camera_writer = cv2.VideoWriter(camera_path, fourcc, 1.0, (width, height))
+            
+            # 2. Lokal harita/cost map/engel haritası
+            map_path = os.path.join(self.recording_dir, 'local_obstacle_map.mp4')
+            self.map_writer = cv2.VideoWriter(map_path, fourcc, 1.0, (width, height))
+            
+            # 3. Telemetri CSV dosyası
+            telemetry_path = os.path.join(self.recording_dir, 'vehicle_telemetry.csv')
+            self.telemetry_csv_file = open(telemetry_path, 'w', newline='', encoding='utf-8')
+            self.telemetry_csv_writer = csv.writer(self.telemetry_csv_file)
+            
+            # CSV header
+            self.telemetry_csv_writer.writerow([
+                'timestamp', 'lat', 'lon', 'groundspeed_mps', 'roll_deg', 'pitch_deg', 'heading_deg',
+                'speed_setpoint_mps', 'heading_setpoint_deg', 'vehicle_mode', 'armed_status'
+            ])
+            
+            # 4. Cost Map CSV dosyası
+            costmap_path = os.path.join(self.recording_dir, 'local_cost_map.csv')
+            self.costmap_csv_file = open(costmap_path, 'w', newline='', encoding='utf-8')
+            self.costmap_csv_writer = csv.writer(self.costmap_csv_file)
+            
+            # Cost Map CSV header
+            self.costmap_csv_writer.writerow([
+                'timestamp', 'grid_x', 'grid_y', 'cost_value', 'obstacle_density', 
+                'object_count', 'cluster_count', 'safety_zone', 'region_type'
+            ])
+            
+            # Kayıt durumunu güncelle
+            self.is_recording = True
+            self.recording_start_time = time.time()
+            
+            # Timer'ı başlat
+            self.recording_timer.start()
+            
+            # UI'yi güncelle
+            self.gcs_app._update_recording_ui(True)
+            
+            self.gcs_app.log_message_received.emit(f"🎥 OTONOM KAYIT BAŞLADI: {self.recording_dir}")
+            self.gcs_app.log_message_received.emit("📁 Kayıt dosyaları:")
+            self.gcs_app.log_message_received.emit(f"   📹 Kamera: {camera_path}")
+            self.gcs_app.log_message_received.emit(f"   🗺️  Harita: {map_path}")
+            self.gcs_app.log_message_received.emit(f"   📊 Telemetri: {telemetry_path}")
+            self.gcs_app.log_message_received.emit(f"   🗺️  Cost Map: {costmap_path}")
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Kayıt başlatma hatası: {e}")
+            self.stop_recording()
+    
+    def stop_recording(self):
+        """Otonom kayıt sistemini durdurur"""
+        if not self.is_recording:
+            return
+        
+        try:
+            # Timer'ı durdur
+            self.recording_timer.stop()
+            
+            # Video writer'ları kapat
+            if self.camera_writer:
+                self.camera_writer.release()
+                self.camera_writer = None
+            
+            if self.map_writer:
+                self.map_writer.release()
+                self.map_writer = None
+            
+            # Kamera'yı kapat
+            if self.camera_capture:
+                self.camera_capture.release()
+                self.camera_capture = None
+            
+            # CSV dosyalarını kapat
+            if self.telemetry_csv_file:
+                self.telemetry_csv_file.close()
+                self.telemetry_csv_file = None
+                self.telemetry_csv_writer = None
+            
+            if self.costmap_csv_file:
+                self.costmap_csv_file.close()
+                self.costmap_csv_file = None
+                self.costmap_csv_writer = None
+            
+            # Kayıt süresini hesapla
+            recording_duration = time.time() - self.recording_start_time if self.recording_start_time else 0
+            
+            self.gcs_app.log_message_received.emit(f"⏹️ OTONOM KAYIT DURDURULDU")
+            self.gcs_app.log_message_received.emit(f"⏱️ Kayıt süresi: {recording_duration:.1f} saniye")
+            self.gcs_app.log_message_received.emit(f"📁 Kayıt dosyaları: {self.recording_dir}")
+            
+            # UI'yi güncelle
+            self.gcs_app._update_recording_ui(False)
+            
+            # Kayıt durumunu sıfırla
+            self.is_recording = False
+            self.recording_start_time = None
+            self.recording_dir = None
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Kayıt durdurma hatası: {e}")
+    
+    def _record_frame(self):
+        """1 Hz'de frame kaydet"""
+        if not self.is_recording or not self.camera_capture:
+            return
+        
+        try:
+            # Kamera frame'i al
+            ret, frame = self.camera_capture.read()
+            if not ret:
+                return
+            
+            # Zaman etiketi
+            timestamp = datetime.utcnow().isoformat() + 'Z'
+            timestamp_display = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            
+            # 1. İşlenmiş kamera verisi (tespit ve takip sonuçları)
+            processed_frame = self._process_camera_frame(frame.copy(), timestamp_display)
+            if self.camera_writer:
+                self.camera_writer.write(processed_frame)
+            
+            # 2. Lokal harita/cost map/engel haritası
+            map_frame = self._create_obstacle_map(frame.copy(), timestamp_display)
+            if self.map_writer:
+                self.map_writer.write(map_frame)
+            
+            # 3. Telemetri verisi
+            self._record_telemetry_data(timestamp)
+            
+            # 4. Cost Map verisi
+            self._record_cost_map_data(timestamp, frame)
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Frame kayıt hatası: {e}")
+    
+    def _process_camera_frame(self, frame, timestamp):
+        """Kamera frame'ini işler (tespit ve takip sonuçları ekler)"""
+        try:
+            h, w = frame.shape[:2]
+            
+            # ROI (Region of Interest) çiz
+            roi_w, roi_h = int(w * 0.6), int(h * 0.6)
+            x0, y0 = (w - roi_w) // 2, (h - roi_h) // 2
+            cv2.rectangle(frame, (x0, y0), (x0 + roi_w, y0 + roi_h), (0, 255, 0), 2)
+            
+            # Gelişmiş obje tespit sistemi
+            detected_objects = self._detect_objects(frame, x0, y0, roi_w, roi_h)
+            
+            # Engel algılama (sarı renk tespiti)
+            roi = frame[y0:y0+roi_h, x0:x0+roi_w]
+            hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+            
+            # Engel tespiti
+            yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
+            obstacle_detected = yellow_ratio > 0.15
+            
+            # Engel konumu tespiti
+            obstacle_position = self._detect_obstacle_position(roi, mask_yellow)
+            
+            # Obje çerçeveleri çiz
+            for obj in detected_objects:
+                x1, y1, x2, y2, obj_type, confidence = obj
+                # Çerçeve çiz
+                color = self._get_object_color(obj_type)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                
+                # Etiket çiz
+                label = f"{obj_type}: {confidence:.1f}%"
+                label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+                cv2.rectangle(frame, (x1, y1 - label_size[1] - 10), (x1 + label_size[0], y1), color, -1)
+                cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            
+            # Görsel overlay
+            status_color = (0, 255, 0) if not obstacle_detected else (0, 0, 255)
+            cv2.putText(frame, f"OTONOM MOD - {timestamp}", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
+            
+            # Engel bilgisi
+            obstacle_info = f"Engel: {yellow_ratio*100:.1f}%"
+            if obstacle_detected:
+                obstacle_info += f" ({obstacle_position})"
+            cv2.putText(frame, obstacle_info, (10, 60), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
+            
+            # Tespit edilen obje sayısı
+            cv2.putText(frame, f"Tespit Edilen Objeler: {len(detected_objects)}", (10, 90), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            
+            # Araç bilgileri
+            if self.gcs_app.vehicle:
+                mode = getattr(self.gcs_app.vehicle.mode, 'name', 'UNKNOWN')
+                armed = getattr(self.gcs_app.vehicle, 'armed', False)
+                armed_text = "ARMED" if armed else "DISARMED"
+                cv2.putText(frame, f"Mod: {mode} | {armed_text}", (10, 120), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            
+            # Zaman etiketi
+            cv2.putText(frame, f"TS: {timestamp}", (10, h - 10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            return frame
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Kamera işleme hatası: {e}")
+            return frame
+    
+    def _create_obstacle_map(self, frame, timestamp):
+        """Lokal harita/cost map/engel haritası oluşturur"""
+        try:
+            h, w = frame.shape[:2]
+            
+            # ROI
+            roi_w, roi_h = int(w * 0.6), int(h * 0.6)
+            x0, y0 = (w - roi_w) // 2, (h - roi_h) // 2
+            roi = frame[y0:y0+roi_h, x0:x0+roi_w]
+            
+            # Gelişmiş obje tespiti ve kümeleme
+            detected_objects = self._detect_objects(frame, x0, y0, roi_w, roi_h)
+            clusters = self._cluster_objects(detected_objects)
+            
+            # Engel algılama
+            hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+            
+            # Harita overlay'i oluştur
+            map_overlay = np.zeros_like(frame)
+            map_overlay[y0:y0+roi_h, x0:x0+roi_w] = cv2.cvtColor(mask_yellow, cv2.COLOR_GRAY2BGR)
+            
+            # Harita görselleştirmesi
+            map_vis = cv2.addWeighted(frame, 0.3, map_overlay, 0.7, 0)
+            
+            # ROI çerçevesi
+            cv2.rectangle(map_vis, (x0, y0), (x0 + roi_w, y0 + roi_h), (0, 255, 255), 2)
+            
+            # Bölge ayırıcıları
+            part_w = roi_w // 3
+            cv2.line(map_vis, (x0 + part_w, y0), (x0 + part_w, y0 + roi_h), (255, 255, 0), 1)
+            cv2.line(map_vis, (x0 + 2*part_w, y0), (x0 + 2*part_w, y0 + roi_h), (255, 255, 0), 1)
+            
+            # Kümeleme sonuçlarını çiz
+            for i, cluster in enumerate(clusters):
+                if len(cluster) > 1:
+                    # Küme merkezi hesapla
+                    center_x = sum(obj[0] for obj in cluster) // len(cluster)
+                    center_y = sum(obj[1] for obj in cluster) // len(cluster)
+                    
+                    # Küme çerçevesi çiz
+                    min_x = min(obj[0] for obj in cluster)
+                    min_y = min(obj[1] for obj in cluster)
+                    max_x = max(obj[2] for obj in cluster)
+                    max_y = max(obj[3] for obj in cluster)
+                    
+                    cv2.rectangle(map_vis, (min_x, min_y), (max_x, max_y), (0, 255, 0), 2)
+                    cv2.putText(map_vis, f"Küme {i+1}: {len(cluster)} obje", (center_x-50, center_y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
+            # Obje tespit sonuçlarını çiz
+            for obj in detected_objects:
+                x1, y1, x2, y2, obj_type, confidence = obj
+                color = self._get_object_color(obj_type)
+                cv2.rectangle(map_vis, (x1, y1), (x2, y2), color, 1)
+                
+                # Küçük etiket
+                label = f"{obj_type[:3]}:{confidence:.0f}%"
+                cv2.putText(map_vis, label, (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+            
+            # Başlık
+            cv2.putText(map_vis, f"LOKAL HARİTA - {timestamp}", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            
+            # İstatistikler
+            yellow_ratio = np.count_nonzero(mask_yellow) / (roi.shape[0] * roi.shape[1])
+            cv2.putText(map_vis, f"Engel: {yellow_ratio*100:.1f}% | Objeler: {len(detected_objects)} | Kümeler: {len(clusters)}", (10, 60), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            
+            # Güvenlik bölgeleri
+            cv2.putText(map_vis, "Güvenli: Yeşil | Dikkat: Sarı | Tehlikeli: Kırmızı", (10, 90), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            # Zaman etiketi
+            cv2.putText(map_vis, f"TS: {timestamp}", (10, h - 10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            return map_vis
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Harita oluşturma hatası: {e}")
+            return frame
+    
+    def _detect_objects(self, frame, x0, y0, roi_w, roi_h):
+        """Gelişmiş obje tespit sistemi"""
+        detected_objects = []
+        
+        try:
+            # ROI bölgesini al
+            roi = frame[y0:y0+roi_h, x0:x0+roi_w]
+            
+            # 1. Renk bazlı obje tespiti
+            color_objects = self._detect_color_objects(roi, x0, y0)
+            detected_objects.extend(color_objects)
+            
+            # 2. Şekil bazlı obje tespiti
+            shape_objects = self._detect_shape_objects(roi, x0, y0)
+            detected_objects.extend(shape_objects)
+            
+            # 3. Hareket tespiti (basit)
+            motion_objects = self._detect_motion_objects(roi, x0, y0)
+            detected_objects.extend(motion_objects)
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Obje tespit hatası: {e}")
+        
+        return detected_objects
+    
+    def _detect_color_objects(self, roi, x0, y0):
+        """Renk bazlı obje tespiti"""
+        objects = []
+        
+        try:
+            hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            
+            # Sarı obje tespiti (engel)
+            mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+            yellow_contours, _ = cv2.findContours(mask_yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in yellow_contours:
+                area = cv2.contourArea(contour)
+                if area > 500:  # Minimum alan
+                    x, y, w, h = cv2.boundingRect(contour)
+                    confidence = min(100, (area / 1000) * 100)  # Alan bazlı güven
+                    objects.append((x0 + x, y0 + y, x0 + x + w, y0 + y + h, "Sarı Engel", confidence))
+            
+            # Kırmızı obje tespiti (dikkat)
+            mask_red1 = cv2.inRange(hsv, (0, 100, 100), (10, 255, 255))
+            mask_red2 = cv2.inRange(hsv, (160, 100, 100), (180, 255, 255))
+            mask_red = cv2.bitwise_or(mask_red1, mask_red2)
+            red_contours, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in red_contours:
+                area = cv2.contourArea(contour)
+                if area > 300:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    confidence = min(100, (area / 800) * 100)
+                    objects.append((x0 + x, y0 + y, x0 + x + w, y0 + y + h, "Kırmızı Obje", confidence))
+            
+            # Mavi obje tespiti (su/havuz)
+            mask_blue = cv2.inRange(hsv, (100, 100, 100), (130, 255, 255))
+            blue_contours, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in blue_contours:
+                area = cv2.contourArea(contour)
+                if area > 1000:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    confidence = min(100, (area / 2000) * 100)
+                    objects.append((x0 + x, y0 + y, x0 + x + w, y0 + y + h, "Mavi Alan", confidence))
+                    
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Renk tespit hatası: {e}")
+        
+        return objects
+    
+    def _detect_shape_objects(self, roi, x0, y0):
+        """Şekil bazlı obje tespiti"""
+        objects = []
+        
+        try:
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            edges = cv2.Canny(blurred, 50, 150)
+            
+            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area > 800:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    
+                    # Şekil analizi
+                    perimeter = cv2.arcLength(contour, True)
+                    approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+                    
+                    if len(approx) == 4:  # Dikdörtgen
+                        obj_type = "Dikdörtgen"
+                        confidence = 85.0
+                    elif len(approx) > 8:  # Daire benzeri
+                        obj_type = "Yuvarlak"
+                        confidence = 75.0
+                    else:
+                        obj_type = "Şekil"
+                        confidence = 60.0
+                    
+                    objects.append((x0 + x, y0 + y, x0 + x + w, y0 + y + h, obj_type, confidence))
+                    
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Şekil tespit hatası: {e}")
+        
+        return objects
+    
+    def _detect_motion_objects(self, roi, x0, y0):
+        """Hareket tespiti (basit)"""
+        objects = []
+        
+        try:
+            # Basit hareket tespiti için frame farkı
+            if not hasattr(self, '_prev_frame'):
+                self._prev_frame = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                return objects
+            
+            current_frame = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            frame_diff = cv2.absdiff(self._prev_frame, current_frame)
+            
+            # Hareket maskesi
+            _, motion_mask = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
+            motion_contours, _ = cv2.findContours(motion_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contour in motion_contours:
+                area = cv2.contourArea(contour)
+                if area > 400:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    confidence = min(100, (area / 1000) * 100)
+                    objects.append((x0 + x, y0 + y, x0 + x + w, y0 + y + h, "Hareket", confidence))
+            
+            self._prev_frame = current_frame
+            
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Hareket tespit hatası: {e}")
+        
+        return objects
+    
+    def _cluster_objects(self, detected_objects):
+        """Objeleri kümeleme işlemi"""
+        if not detected_objects:
+            return []
+        
+        clusters = []
+        used_objects = set()
+        
+        for i, obj1 in enumerate(detected_objects):
+            if i in used_objects:
+                continue
+                
+            cluster = [obj1]
+            used_objects.add(i)
+            
+            # Benzer objeleri bul
+            for j, obj2 in enumerate(detected_objects):
+                if j in used_objects:
+                    continue
+                    
+                # Mesafe hesapla (merkez noktalar arası)
+                center1_x = (obj1[0] + obj1[2]) // 2
+                center1_y = (obj1[1] + obj1[3]) // 2
+                center2_x = (obj2[0] + obj2[2]) // 2
+                center2_y = (obj2[1] + obj2[3]) // 2
+                
+                distance = ((center1_x - center2_x) ** 2 + (center1_y - center2_y) ** 2) ** 0.5
+                
+                # Aynı tip ve yakın objeleri kümele
+                if (obj1[4] == obj2[4] and distance < 100):  # 100 piksel mesafe
+                    cluster.append(obj2)
+                    used_objects.add(j)
+            
+            clusters.append(cluster)
+        
+        return clusters
+    
+    def _get_object_color(self, obj_type):
+        """Obje tipine göre renk döndürür"""
+        color_map = {
+            "Sarı Engel": (0, 255, 255),    # Sarı
+            "Kırmızı Obje": (0, 0, 255),    # Kırmızı
+            "Mavi Alan": (255, 0, 0),       # Mavi
+            "Dikdörtgen": (0, 255, 0),      # Yeşil
+            "Yuvarlak": (255, 0, 255),      # Magenta
+            "Şekil": (255, 255, 0),         # Cyan
+            "Hareket": (128, 128, 128)      # Gri
+        }
+        return color_map.get(obj_type, (255, 255, 255))  # Varsayılan beyaz
+    
+    def _detect_obstacle_position(self, roi, mask_yellow):
+        """Engel konumunu tespit eder"""
+        try:
+            h, w = roi.shape[:2]
+            left_part = mask_yellow[:, :w//3]
+            center_part = mask_yellow[:, w//3:2*w//3]
+            right_part = mask_yellow[:, 2*w//3:]
+            
+            left_density = np.count_nonzero(left_part) / (left_part.shape[0] * left_part.shape[1])
+            center_density = np.count_nonzero(center_part) / (center_part.shape[0] * center_part.shape[1])
+            right_density = np.count_nonzero(right_part) / (right_part.shape[0] * right_part.shape[1])
+            
+            max_density = max(left_density, center_density, right_density)
+            
+            if max_density < 0.02:
+                return "none"
+            elif left_density == max_density:
+                return "left"
+            elif right_density == max_density:
+                return "right"
+            else:
+                return "center"
+                
+        except Exception:
+            return "unknown"
+    
+    def _record_telemetry_data(self, timestamp):
+        """Telemetri verisini CSV'ye kaydeder"""
+        if not self.telemetry_csv_writer:
+            self.gcs_app.log_message_received.emit("❌ Telemetri CSV writer yok!")
+            return
+        
+        self.gcs_app.log_message_received.emit(f"📊 Telemetri kayıt: {timestamp}")
+        
+        try:
+            # Araç verilerini al
+            vehicle = self.gcs_app.vehicle
+            
+            # Varsayılan değerler (araç bağlı değilse)
+            lat = None
+            lon = None
+            groundspeed = None
+            heading = None
+            roll_deg = None
+            pitch_deg = None
+            speed_setpoint = None
+            heading_setpoint = None
+            mode_name = "MANUAL"
+            armed = False
+            
+            # Araç bağlıysa gerçek verileri al
+            if vehicle:
+                # Konum
+                if hasattr(vehicle, 'location') and vehicle.location and hasattr(vehicle.location, 'global_frame'):
+                    gf = vehicle.location.global_frame
+                    lat = getattr(gf, 'lat', None)
+                    lon = getattr(gf, 'lon', None)
+                
+                # Hız ve yönelim
+                groundspeed = getattr(vehicle, 'groundspeed', None)
+                heading = getattr(vehicle, 'heading', None)
+                
+                # Roll, pitch
+                if hasattr(vehicle, 'attitude') and vehicle.attitude is not None:
+                    try:
+                        roll_deg = math.degrees(vehicle.attitude.roll)
+                        pitch_deg = math.degrees(vehicle.attitude.pitch)
+                    except Exception:
+                        pass
+                
+                # Setpoint değerleri
+                mode_name = getattr(getattr(vehicle, 'mode', None), 'name', None)
+                
+                if mode_name in ["AUTO", "GUIDED", "RTL"]:
+                    # Hız setpoint
+                    wpnav_speed = vehicle.parameters.get('WPNAV_SPEED', None)
+                    wp_speed = vehicle.parameters.get('WP_SPEED', None)
+                    speed_param = wpnav_speed if wpnav_speed is not None else wp_speed
+                    if speed_param is not None:
+                        speed_setpoint = speed_param / 100.0
+                    
+                    # Heading setpoint
+                    if len(self.gcs_app.waypoints) > 0 and isinstance(heading, (int, float)):
+                        heading_setpoint = self.gcs_app.get_target_heading_from_mission(heading)
+                
+                # Armed durumu
+                armed = getattr(vehicle, 'armed', False)
+            
+            # CSV'ye yaz
+            row_data = [
+                timestamp,
+                f"{lat:.7f}" if isinstance(lat, float) else "N/A",
+                f"{lon:.7f}" if isinstance(lon, float) else "N/A",
+                f"{groundspeed:.3f}" if isinstance(groundspeed, float) else "N/A",
+                f"{roll_deg:.2f}" if isinstance(roll_deg, float) else "N/A",
+                f"{pitch_deg:.2f}" if isinstance(pitch_deg, float) else "N/A",
+                f"{heading:.1f}" if isinstance(heading, (int, float)) else "N/A",
+                f"{speed_setpoint:.3f}" if isinstance(speed_setpoint, float) else "N/A",
+                f"{heading_setpoint:.1f}" if isinstance(heading_setpoint, (int, float)) else "N/A",
+                mode_name or "N/A",
+                "ARMED" if armed else "DISARMED"
+            ]
+            
+            self.telemetry_csv_writer.writerow(row_data)
+            self.gcs_app.log_message_received.emit(f"✅ CSV satırı yazıldı: {row_data[:3]}...")  # İlk 3 elemanı göster
+            
+            # Dosyayı flush et
+            if self.telemetry_csv_file:
+                self.telemetry_csv_file.flush()
+                
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Telemetri kayıt hatası: {e}")
+    
+    def _record_cost_map_data(self, timestamp, frame):
+        """Cost map verisini CSV'ye kaydeder"""
+        if not self.costmap_csv_writer:
+            return
+        
+        try:
+            h, w = frame.shape[:2]
+            
+            # ROI bölgesini al
+            roi_w, roi_h = int(w * 0.6), int(h * 0.6)
+            x0, y0 = (w - roi_w) // 2, (h - roi_h) // 2
+            roi = frame[y0:y0+roi_h, x0:x0+roi_w]
+            
+            # Grid boyutları (10x10 grid)
+            grid_size_x = roi_w // 10
+            grid_size_y = roi_h // 10
+            
+            # Obje tespiti
+            detected_objects = self._detect_objects(frame, x0, y0, roi_w, roi_h)
+            clusters = self._cluster_objects(detected_objects)
+            
+            # Engel algılama
+            hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            mask_yellow = cv2.inRange(hsv, (18, 140, 80), (38, 255, 255))
+            
+            # Her grid hücresi için cost map verisi
+            for grid_y in range(10):
+                for grid_x in range(10):
+                    # Grid koordinatları
+                    start_x = x0 + grid_x * grid_size_x
+                    start_y = y0 + grid_y * grid_size_y
+                    end_x = start_x + grid_size_x
+                    end_y = start_y + grid_size_y
+                    
+                    # Grid bölgesindeki engel yoğunluğu
+                    grid_mask = mask_yellow[grid_y * grid_size_y:(grid_y + 1) * grid_size_y,
+                                          grid_x * grid_size_x:(grid_x + 1) * grid_size_x]
+                    obstacle_density = np.count_nonzero(grid_mask) / (grid_size_x * grid_size_y)
+                    
+                    # Grid bölgesindeki obje sayısı
+                    object_count = 0
+                    for obj in detected_objects:
+                        obj_x1, obj_y1, obj_x2, obj_y2 = obj[0], obj[1], obj[2], obj[3]
+                        # Obje grid ile kesişiyor mu?
+                        if (obj_x1 < end_x and obj_x2 > start_x and 
+                            obj_y1 < end_y and obj_y2 > start_y):
+                            object_count += 1
+                    
+                    # Grid bölgesindeki küme sayısı
+                    cluster_count = 0
+                    for cluster in clusters:
+                        cluster_in_grid = False
+                        for obj in cluster:
+                            obj_x1, obj_y1, obj_x2, obj_y2 = obj[0], obj[1], obj[2], obj[3]
+                            if (obj_x1 < end_x and obj_x2 > start_x and 
+                                obj_y1 < end_y and obj_y2 > start_y):
+                                cluster_in_grid = True
+                                break
+                        if cluster_in_grid:
+                            cluster_count += 1
+                    
+                    # Cost değeri hesapla (0-100 arası)
+                    cost_value = 0
+                    if obstacle_density > 0.3:  # %30'dan fazla engel
+                        cost_value = 100
+                    elif obstacle_density > 0.1:  # %10-30 arası
+                        cost_value = 60
+                    elif object_count > 2:  # 2'den fazla obje
+                        cost_value = 40
+                    elif object_count > 0:  # En az 1 obje
+                        cost_value = 20
+                    
+                    # Güvenlik bölgesi
+                    if cost_value >= 80:
+                        safety_zone = "TEHLİKELİ"
+                    elif cost_value >= 40:
+                        safety_zone = "DİKKAT"
+                    else:
+                        safety_zone = "GÜVENLİ"
+                    
+                    # Bölge tipi
+                    if grid_x < 3:
+                        region_type = "SOL"
+                    elif grid_x > 6:
+                        region_type = "SAĞ"
+                    else:
+                        region_type = "ORTA"
+                    
+                    # CSV'ye yaz
+                    self.costmap_csv_writer.writerow([
+                        timestamp,
+                        grid_x,
+                        grid_y,
+                        cost_value,
+                        f"{obstacle_density:.3f}",
+                        object_count,
+                        cluster_count,
+                        safety_zone,
+                        region_type
+                    ])
+            
+            # Dosyayı flush et
+            if self.costmap_csv_file:
+                self.costmap_csv_file.flush()
+                
+        except Exception as e:
+            self.gcs_app.log_message_received.emit(f"❌ Cost map kayıt hatası: {e}")
 
 class MapBridge(QObject):
     """Harita ve Python arasında köprü görevi gören sınıf"""
@@ -71,23 +842,32 @@ class GCSApp(QWidget):
         self._gorev2_reader = None
         self._gorev2_thread = None
         
-        # Önceden tanımlanmış görev koordinatları (İstanbul çevresi)
+        # Otonom kayıt sistemi
+        self.autonomous_recording = AutonomousRecordingSystem(self)
+        self.last_vehicle_mode = None
+        
+        # Önceden tanımlanmış görev koordinatları (5 nokta)
         self.mission_coordinates = [
-            [41.0082, 28.9784],   # İstanbul merkez (Fatih)
-            [41.0186, 28.9647],   # Eminönü
-            [41.0214, 28.9731],   # Karaköy
-            [41.0136, 28.9550]    # Beyoğlu
+            [40.863050, 29.259951],   # Görev Noktası 1
+            [40.862922, 29.259912],   # Görev Noktası 2
+            [40.862815, 29.259734],   # Görev Noktası 3
+            [40.862681, 29.259469],   # Görev Noktası 4
+            [40.863255, 29.259443]    # Görev Noktası 5
         ]
         
-        # Görev 2 hedef koordinatları (erkan_denendi.py ile uyumlu sıralı liste)
+        # Görev 2 hedef koordinatları (5 nokta)
         self.gorev2_targets = [
-            (40.771275, 29.437543),
-            (40.771600, 29.437900),
-            (40.771900, 29.437300),
-            (40.771400, 29.436900),
+            (40.863050, 29.259951),   # Görev 2 Noktası 1
+            (40.862922, 29.259912),   # Görev 2 Noktası 2
+            (40.862815, 29.259734),   # Görev 2 Noktası 3
+            (40.862681, 29.259469),   # Görev 2 Noktası 4
+            (40.863255, 29.259443)    # Görev 2 Noktası 5
         ]
         # İç navigasyon için ilk hedef (geri uyum)
         self.gorev2_target = self.gorev2_targets[0]
+        
+        # Eve dönüş koordinatı (başlangıç noktası)
+        self.home_coordinates = (40.863050, 29.259951)  # İlk koordinat eve dönüş noktası
         
         # Grafik verileri için deque'lar (son 100 veri noktası)
         self.graph_data_size = 100
@@ -221,11 +1001,18 @@ class GCSApp(QWidget):
             
             lat_input.setDecimals(6)
             lat_input.setRange(-90.0, 90.0)
-            lat_input.setValue(41.0082 + i*0.001)  # Varsayılan değerler
+            # Verdiğiniz koordinatları varsayılan değer olarak ayarla
+            default_coords = [
+                (40.863050, 29.259951),  # Nokta 1
+                (40.862922, 29.259912),  # Nokta 2
+                (40.862815, 29.259734),  # Nokta 3
+                (40.862681, 29.259469)   # Nokta 4
+            ]
+            lat_input.setValue(default_coords[i][0])
             
             lon_input.setDecimals(6)
             lon_input.setRange(-180.0, 180.0)
-            lon_input.setValue(28.9784 + i*0.001)  # Varsayılan değerler
+            lon_input.setValue(default_coords[i][1])
             
             parkur1_layout.addWidget(lat_label, i, 0)
             parkur1_layout.addWidget(lat_input, i, 1)
@@ -245,11 +1032,11 @@ class GCSApp(QWidget):
         
         self.parkur2_lat.setDecimals(6)
         self.parkur2_lat.setRange(-90.0, 90.0)
-        self.parkur2_lat.setValue(41.0100)  # Varsayılan değer
+        self.parkur2_lat.setValue(40.863255)  # 5. koordinat - Lat
         
         self.parkur2_lon.setDecimals(6)
         self.parkur2_lon.setRange(-180.0, 180.0)
-        self.parkur2_lon.setValue(28.9800)  # Varsayılan değer
+        self.parkur2_lon.setValue(29.259443)  # 5. koordinat - Lon
         
         parkur2_layout.addWidget(QLabel("Lat:"), 0, 0)
         parkur2_layout.addWidget(self.parkur2_lat, 0, 1)
@@ -359,7 +1146,38 @@ class GCSApp(QWidget):
         self.thruster_figure.subplots_adjust(left=0.15, right=0.95, top=0.8, bottom=0.2)
         graphs_layout.addWidget(self.thruster_canvas)
         
-        # 4. SİSTEM LOGLARI PANELİ - GRAFİKLER ALTINDA
+        # 4. OTONOM KAYIT PANELİ - GRAFİKLER ALTINDA
+        recording_frame = QFrame()
+        recording_frame.setFrameShape(QFrame.StyledPanel)
+        recording_layout = QVBoxLayout(recording_frame)
+        sidebar_layout.addWidget(recording_frame)
+        
+        recording_title = QLabel("Otonom Kayıt Sistemi")
+        recording_title.setFont(QFont('Arial', 14, QFont.Bold))
+        recording_layout.addWidget(recording_title)
+        
+        # Kayıt durumu göstergesi
+        self.recording_status_label = QLabel("🔴 Kayıt Kapalı")
+        self.recording_status_label.setStyleSheet("font-weight: bold; color: red; padding: 5px; border: 1px solid red;")
+        recording_layout.addWidget(self.recording_status_label)
+        
+        # Kayıt süresi göstergesi
+        self.recording_duration_label = QLabel("Süre: 00:00")
+        self.recording_duration_label.setStyleSheet("font-size: 12px; color: gray;")
+        recording_layout.addWidget(self.recording_duration_label)
+        
+        # Manuel kayıt kontrol butonları
+        recording_buttons_layout = QHBoxLayout()
+        self.start_recording_btn = QPushButton("🎥 Kayıt Başlat")
+        self.stop_recording_btn = QPushButton("⏹️ Kayıt Durdur")
+        self.start_recording_btn.clicked.connect(self.manual_start_recording)
+        self.stop_recording_btn.clicked.connect(self.manual_stop_recording)
+        self.stop_recording_btn.setEnabled(False)
+        recording_buttons_layout.addWidget(self.start_recording_btn)
+        recording_buttons_layout.addWidget(self.stop_recording_btn)
+        recording_layout.addLayout(recording_buttons_layout)
+        
+        # 5. SİSTEM LOGLARI PANELİ - OTONOM KAYIT ALTINDA
         log_frame = QFrame()
         log_frame.setFrameShape(QFrame.StyledPanel)
         log_layout = QVBoxLayout(log_frame)
@@ -487,6 +1305,14 @@ class GCSApp(QWidget):
         arm_buttons_layout.addWidget(self.test_motors_button)
         mission_control_layout.addLayout(arm_buttons_layout)
         
+        # Eve Dön butonu ekle
+        home_button_layout = QHBoxLayout()
+        self.home_button = QPushButton("🏠 EVE DÖN")
+        self.home_button.setStyleSheet("background-color: #9C27B0; color: white; font-weight: bold; padding: 8px; font-size: 12px;")
+        self.home_button.clicked.connect(self.go_home)
+        home_button_layout.addWidget(self.home_button)
+        mission_control_layout.addLayout(home_button_layout)
+        
         self.upload_mission_button.clicked.connect(self.send_mission_to_vehicle)
         self.read_mission_button.clicked.connect(self.read_custom_mission_from_vehicle)
         self.clear_mission_button.clicked.connect(self.clear_mission)
@@ -495,7 +1321,7 @@ class GCSApp(QWidget):
 
         self.mode_buttons = [self.stabilize_button, self.auto_button, self.guided_button, 
                            self.upload_mission_button, self.read_mission_button, self.clear_mission_button, self.load_mission_button, self.gorev2_button,
-                           self.arm_button, self.disarm_button, self.test_motors_button]
+                           self.arm_button, self.disarm_button, self.test_motors_button, self.home_button]
         for btn in self.mode_buttons:
             btn.setEnabled(False)
 
@@ -848,6 +1674,10 @@ class GCSApp(QWidget):
             self.stop_mission_btn.setEnabled(True)
             self.stop_mission_btn.setText("⏹️ GÖREV 2'Yİ DURDUR")
             
+            # Otonom kayıt sistemini başlat (Görev 2 otonom modda çalışır)
+            if not self.autonomous_recording.is_recording:
+                self.autonomous_recording.start_recording()
+            
             self.gorev2_running = True
             self.log_message_received.emit("Görev 2 başlatılıyor (uygulama içi)...")
             self._gorev2_thread = threading.Thread(target=self._gorev2_worker, daemon=True)
@@ -1191,6 +2021,11 @@ class GCSApp(QWidget):
             if self.gorev2_running:
                 self.log_message_received.emit("Görev 2 sonlandırılıyor...")
                 self.gorev2_running = False
+                
+                # Otonom kayıt sistemini durdur
+                if self.autonomous_recording.is_recording:
+                    self.autonomous_recording.stop_recording()
+                    
             if self.gorev2_process and self.gorev2_process.poll() is None:
                 self.gorev2_process.terminate()
         except Exception as e:
@@ -1198,7 +2033,13 @@ class GCSApp(QWidget):
 
     def closeEvent(self, event):
         try:
+            # Görev 2'yi sonlandır
             self.terminate_gorev2()
+            
+            # Otonom kayıt sistemini durdur
+            if self.autonomous_recording.is_recording:
+                self.autonomous_recording.stop_recording()
+                
         finally:
             super().closeEvent(event)
 
@@ -1350,6 +2191,10 @@ class GCSApp(QWidget):
             self.clear_graph_data()
             # Telemetri CSV kaydını durdur
             self.stop_telemetry_logging()
+            
+            # Otonom kayıt sistemini durdur
+            if self.autonomous_recording.is_recording:
+                self.autonomous_recording.stop_recording()
 
     def request_servo_output(self):
         """ArduPilot'tan SERVO_OUTPUT_RAW mesajını request et"""
@@ -1592,6 +2437,11 @@ class GCSApp(QWidget):
             speed = getattr(self.vehicle, 'groundspeed', None)
             heading = getattr(self.vehicle, 'heading', None)  
             mode = getattr(self.vehicle.mode, 'name', None) if hasattr(self.vehicle, 'mode') else None
+            
+            # Otonom kayıt sistemi - mod değişikliği kontrolü
+            if mode != self.last_vehicle_mode:
+                self._handle_mode_change(self.last_vehicle_mode, mode)
+                self.last_vehicle_mode = mode
             
             # Location güvenli alım
             alt = None
@@ -2342,6 +3192,28 @@ class GCSApp(QWidget):
         except Exception as e:
             self.log_message_received.emit(f"Telemetri kaydı durdurulamadı: {e}")
 
+    def _handle_mode_change(self, old_mode, new_mode):
+        """Araç modu değişikliğini işler - otonom kayıt sistemi için"""
+        try:
+            # Otonom modlara geçiş kontrolü
+            autonomous_modes = ["AUTO", "GUIDED", "RTL"]
+            
+            # Manuel modlara geçiş kontrolü
+            manual_modes = ["MANUAL", "STABILIZE", "ACRO", "ALT_HOLD"]
+            
+            # Otonom moda geçiş
+            if (old_mode not in autonomous_modes and new_mode in autonomous_modes):
+                self.log_message_received.emit(f"🚀 OTONOM MODA GEÇİŞ: {old_mode} → {new_mode}")
+                self.autonomous_recording.start_recording()
+                
+            # Manuel moda geçiş
+            elif (old_mode in autonomous_modes and new_mode in manual_modes):
+                self.log_message_received.emit(f"⏹️ MANUEL MODA GEÇİŞ: {old_mode} → {new_mode}")
+                self.autonomous_recording.stop_recording()
+                
+        except Exception as e:
+            self.log_message_received.emit(f"❌ Mod değişikliği işleme hatası: {e}")
+
     def _log_telemetry_row(self):
         """1 Hz telemetri satırı yazar."""
         if not self.is_connected or not self.vehicle or self._telemetry_csv_writer is None:
@@ -2410,9 +3282,11 @@ class GCSApp(QWidget):
                 self.bridge.addWaypoint.emit(lat, lon)
             
             # Koordinatları haritaya gönder ve log'a yaz
-            self.log_message_received.emit(f"Görev yüklendi: {len(self.mission_coordinates)} waypoint eklendi")
+            self.log_message_received.emit(f"🎯 GÖREV YÜKLENDİ: {len(self.mission_coordinates)} nokta")
+            self.log_message_received.emit("📍 Görev Noktaları:")
             for i, (lat, lon) in enumerate(self.mission_coordinates):
-                self.log_message_received.emit(f"Waypoint {i+1}: {lat:.6f}, {lon:.6f}")
+                self.log_message_received.emit(f"   Nokta {i+1}: {lat:.6f}, {lon:.6f}")
+            self.log_message_received.emit("✅ Tüm koordinatlar haritaya eklendi!")
             
             # Eğer araç bağlıysa, otomatik olarak görevi araca gönder
             if self.is_connected and self.vehicle:
@@ -2421,6 +3295,84 @@ class GCSApp(QWidget):
         except Exception as e:
             self.log_message_received.emit(f"Görev yükleme hatası: {str(e)}")
             QMessageBox.warning(self, "Hata", f"Görev yüklenirken hata oluştu: {str(e)}")
+
+    def manual_start_recording(self):
+        """Manuel olarak kayıt başlatır"""
+        if not self.autonomous_recording.is_recording:
+            self.autonomous_recording.start_recording()
+            self._update_recording_ui(True)
+        else:
+            self.log_message_received.emit("⚠️ Kayıt zaten aktif!")
+    
+    def manual_stop_recording(self):
+        """Manuel olarak kayıt durdurur"""
+        if self.autonomous_recording.is_recording:
+            self.autonomous_recording.stop_recording()
+            self._update_recording_ui(False)
+        else:
+            self.log_message_received.emit("⚠️ Kayıt zaten kapalı!")
+    
+    def _update_recording_ui(self, is_recording):
+        """Kayıt UI'sını günceller"""
+        if is_recording:
+            self.recording_status_label.setText("🟢 Kayıt Aktif")
+            self.recording_status_label.setStyleSheet("font-weight: bold; color: green; padding: 5px; border: 1px solid green;")
+            self.start_recording_btn.setEnabled(False)
+            self.stop_recording_btn.setEnabled(True)
+            
+            # Kayıt süresi timer'ı başlat
+            self.recording_duration_timer = QTimer()
+            self.recording_duration_timer.timeout.connect(self._update_recording_duration)
+            self.recording_duration_timer.start(1000)  # 1 saniye
+            self.recording_start_time = time.time()
+        else:
+            self.recording_status_label.setText("🔴 Kayıt Kapalı")
+            self.recording_status_label.setStyleSheet("font-weight: bold; color: red; padding: 5px; border: 1px solid red;")
+            self.start_recording_btn.setEnabled(True)
+            self.stop_recording_btn.setEnabled(False)
+            
+            # Kayıt süresi timer'ını durdur
+            if hasattr(self, 'recording_duration_timer'):
+                self.recording_duration_timer.stop()
+            self.recording_duration_label.setText("Süre: 00:00")
+    
+    def _update_recording_duration(self):
+        """Kayıt süresini günceller"""
+        if hasattr(self, 'recording_start_time') and self.recording_start_time:
+            duration = int(time.time() - self.recording_start_time)
+            minutes = duration // 60
+            seconds = duration % 60
+            self.recording_duration_label.setText(f"Süre: {minutes:02d}:{seconds:02d}")
+    
+    def go_home(self):
+        """Aracı eve dönüş koordinatına gönderir"""
+        if not self.is_connected or not self.vehicle:
+            self.log_message_received.emit("❌ Eve dönmek için önce araca bağlanın!")
+            return
+        
+        try:
+            home_lat, home_lon = self.home_coordinates
+            
+            # GUIDED moduna geç
+            self.set_vehicle_mode("GUIDED")
+            
+            # DroneKit LocationGlobal kullanarak eve dönüş koordinatını araca gönder
+            home_location = LocationGlobal(home_lat, home_lon, 0)
+            self.vehicle.simple_goto(home_location)
+            
+            # Log mesajı
+            self.log_message_received.emit(f"🏠 EVE DÖNÜŞ BAŞLATILDI!")
+            self.log_message_received.emit(f"📍 Hedef: {home_lat:.6f}, {home_lon:.6f}")
+            self.log_message_received.emit("✅ Araç eve dönüş koordinatına yönlendirildi")
+            
+            # Haritada eve dönüş noktasını göster
+            self._emit_add_waypoint_safe(home_lat, home_lon)
+            
+        except Exception as e:
+            self.log_message_received.emit(f"❌ Eve dönüş hatası: {str(e)}")
+            QMessageBox.warning(self, "Hata", f"Eve dönüş başlatılamadı: {str(e)}")
+    
+
 
 if __name__ == '__main__':
     # qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9223") # Debug için

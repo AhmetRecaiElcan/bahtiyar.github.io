@@ -1,1 +1,0 @@
-2025-07-16 12:01:45 | DEBUG    | Telemetri: Hız=5.2, Heading=90, Pos=(41.025631, 28.974298) | Data: {"telemetry": {"speed": 5.2, "heading": 90, "position": {"lat": 41.025631, "lon": 28.974298}, "battery": {"level": 85}}, "validation": null}

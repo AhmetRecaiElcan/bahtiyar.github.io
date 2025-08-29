@@ -1,3 +1,30 @@
-PyQt5==5.15.10
-PyQtWebEngine==5.15.6
-pyserial==3.5 
+# IDA Ground Control Station - Gerekli Python Paketleri
+
+# Temel GUI ve web engine
+PyQt5>=5.15.0
+PyQtWebEngine>=5.15.0
+
+# DroneKit ve MAVLink
+dronekit>=2.9.0
+pymavlink>=2.4.0
+
+# Matplotlib (grafikler için)
+matplotlib>=3.5.0
+
+# OpenCV (kamera kayıt sistemi için)
+opencv-python>=4.5.0
+
+# Serial port işlemleri
+pyserial>=3.5
+
+# NumPy (OpenCV bağımlılığı)
+numpy>=1.21.0
+
+# CSV işlemleri (Python built-in, ama belirtmek için)
+# csv - Python built-in modül
+
+# Tarih/saat işlemleri (Python built-in, ama belirtmek için)
+# datetime - Python built-in modül
+
+# Threading ve time (Python built-in, ama belirtmek için)
+# threading, time - Python built-in modüller 

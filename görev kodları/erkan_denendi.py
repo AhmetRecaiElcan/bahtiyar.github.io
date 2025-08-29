@@ -15,7 +15,7 @@ import numpy as np
 from dronekit import connect, VehicleMode
 
 # Ayarlar
-CONNECTION = 'COM17'
+CONNECTION = 'COM4'
 BAUD = 115200
 CAM_INDEX = 0
 
@@ -93,16 +93,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
         if obstacle_position == "left":
             # Sol engel -> sağa git
             send_rc(PWM_FAST, PWM_STOP + 200)  # sağa dön (120 → 200)
-            print("↗️ SOL ENGEL - SAĞA KAÇIYOR")
+            print("↗ SOL ENGEL - SAĞA KAÇIYOR")
         elif obstacle_position == "right":
             # Sağ engel -> sola git  
             send_rc(PWM_FAST, PWM_STOP - 200)  # sola dön (120 → 200)
-            print("↖️ SAĞ ENGEL - SOLA KAÇIYOR")
+            print("↖ SAĞ ENGEL - SOLA KAÇIYOR")
         else:  # center
             # Orta engel -> rastgele tarafa kaç
             direction = 1 if (current_time % 2) > 1 else -1
             send_rc(PWM_FAST, PWM_STOP + (200 * direction))
-            print(f"{'↗️ ORTA ENGEL - SAĞA' if direction > 0 else '↖️ ORTA ENGEL - SOLA'} KAÇIYOR")
+            print(f"{'↗ ORTA ENGEL - SAĞA' if direction > 0 else '↖ ORTA ENGEL - SOLA'} KAÇIYOR")
         
         if elapsed > 2.0:  # 2 saniye yan hareket
             avoidance_stage = 2
@@ -110,7 +110,7 @@ def obstacle_avoidance_maneuver(obstacle_position):
             
     elif avoidance_stage == 2:  # Düz git (1.5 saniye)
         send_rc(PWM_FAST, PWM_STOP)
-        print("➡️ ENGEL ATLAMA - DÜZ GİDİYOR")
+        print("➡ ENGEL ATLAMA - DÜZ GİDİYOR")
         
         if elapsed > 1.5:  # 1.5 saniye düz git
             avoidance_stage = 3
@@ -120,16 +120,16 @@ def obstacle_avoidance_maneuver(obstacle_position):
         if obstacle_position == "left":
             # Sola geri dön
             send_rc(PWM_FAST, PWM_STOP - 180)  # 100 → 180
-            print("↖️ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
+            print("↖ ENGEL ATLAMA - SOLA GERİ DÖNÜYOR")
         elif obstacle_position == "right":
             # Sağa geri dön
             send_rc(PWM_FAST, PWM_STOP + 180)  # 100 → 180
-            print("↗️ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
+            print("↗ ENGEL ATLAMA - SAĞA GERİ DÖNÜYOR")
         else:  # center
             # Ters yöne geri dön
             direction = -1 if (current_time % 2) > 1 else 1
             send_rc(PWM_FAST, PWM_STOP + (180 * direction))
-            print(f"{'↗️' if direction > 0 else '↖️'} ENGEL ATLAMA - GERİ DÖNÜYOR")
+            print(f"{'↗' if direction > 0 else '↖'} ENGEL ATLAMA - GERİ DÖNÜYOR")
         
         if elapsed > 1.5:  # 1.5 saniye geri dön
             # Manevra tamamlandı
@@ -163,7 +163,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     lat_to_m = 111000  # 1 derece = ~111km
     lon_to_m = 111000 * math.cos(math.radians(lat1))
     
-    distance = math.sqrt((dlat * lat_to_m)**2 + (dlon * lon_to_m)**2)
+    distance = math.sqrt((dlat * lat_to_m)*2 + (dlon * lon_to_m)*2)
     return distance
 
 def bearing_to_motor_command(target_bearing, current_heading):
@@ -180,17 +180,17 @@ def bearing_to_motor_command(target_bearing, current_heading):
     
     if abs(bearing_diff) < 25:  # düz git (deadzone artırıldı)
         thr, steer = PWM_FAST, PWM_STOP
-        print(f"➡️ DÜZ GİT: THR={thr}, STR={steer}")
+        print(f"➡ DÜZ GİT: THR={thr}, STR={steer}")
     elif bearing_diff > 0:  # sağa dön
         steer_offset = min(180, abs(bearing_diff) * 2.2)  # kazanç artırıldı
         thr = PWM_FAST
         steer = PWM_STOP - steer_offset  # TERS: test için
-        print(f"↗️ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
+        print(f"↗ SAĞA DÖN: THR={thr}, STR={steer} (offset: -{steer_offset})")
     else:  # sola dön
         steer_offset = min(180, abs(bearing_diff) * 2.2)  # kazanç artırıldı
         thr = PWM_FAST
         steer = PWM_STOP + steer_offset  # TERS: test için
-        print(f"↖️ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
+        print(f"↖ SOLA DÖN: THR={thr}, STR={steer} (offset: +{steer_offset})")
     
     return thr, steer
 
@@ -208,7 +208,7 @@ def send_rc(throttle_pwm: int, steer_pwm: int):
 
 def stop_all():
     send_rc(PWM_STOP, PWM_STOP)
-    print("⏹️ MOTORLAR DURDURULDU")
+    print("⏹ MOTORLAR DURDURULDU")
 
 def get_gps_data():
     """GPS verisi al (gerçek veya simüle)"""
@@ -251,7 +251,7 @@ def update_simulated_position(thr, steer):
         sim_lon += speed_factor * math.sin(math.radians(sim_heading))
 
 # Bağlantı
-print("▶️ Bağlanılıyor...")
+print("▶ Bağlanılıyor...")
 try:
     vehicle = connect(CONNECTION, baud=BAUD, wait_ready=False, timeout=30)
     vehicle.mode = VehicleMode("MANUAL")
@@ -263,7 +263,7 @@ try:
         if vehicle.armed:
             break
     
-    print("✅ Bağlantı OK, ARMED" if vehicle.armed else "⚠️ ARM EDİLEMEDİ")
+    print("✅ Bağlantı OK, ARMED" if vehicle.armed else "⚠ ARM EDİLEMEDİ")
     
 except Exception as e:
     print(f"❌ Hata: {e}")
@@ -443,17 +443,17 @@ try:
             current_mode = "MANUAL"
             send_rc(PWM_FAST, PWM_STOP)
             update_simulated_position(PWM_FAST, PWM_STOP)
-            print("➡️ DÜZ GİT")
+            print("➡ DÜZ GİT")
         elif key == ord('2'):
             current_mode = "MANUAL"
             send_rc(PWM_FAST, PWM_STOP + 100)
             update_simulated_position(PWM_FAST, PWM_STOP + 100)
-            print("↗️ SAĞA DÖN")
+            print("↗ SAĞA DÖN")
         elif key == ord('3'):
             current_mode = "MANUAL"
             send_rc(PWM_FAST, PWM_STOP - 100)
             update_simulated_position(PWM_FAST, PWM_STOP - 100)
-            print("↖️ SOLA DÖN")
+            print("↖ SOLA DÖN")
         elif key == ord('4'):
             # Sol engel atlama testi
             current_mode = "MANUAL"
@@ -481,12 +481,12 @@ try:
         elif key == ord('s'):
             current_mode = "MANUAL"
             stop_all()
-            print("⏹️ DUR")
+            print("⏹ DUR")
 
 except KeyboardInterrupt:
     pass
 finally:
-    print("\n▶️ Kapatılıyor...")
+    print("\n▶ Kapatılıyor...")
     stop_all()
     vehicle.channels.overrides = {}
     try:

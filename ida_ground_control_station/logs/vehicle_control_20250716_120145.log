@@ -1,1 +1,0 @@
-2025-07-16 12:01:45 | INFO     | Araç komutu: SET_MODE (✅) → Mode changed successfully | Data: {"command": "SET_MODE", "parameters": {"mode": "AUTO"}, "success": true, "response": "Mode changed successfully"}
