@@ -297,6 +297,12 @@ print("'r' = Simüle pozisyonu sıfırla")
 print("'s' = Dur")
 print("'q' = Çıkış")
 
+# Otomatik GPS modu başlat
+print("\n🎯 OTOMATİK GPS MODU BAŞLATILIYOR...")
+current_mode = "AUTO_GPS"
+print("✅ GPS otomatik modu aktif!")
+print("📍 Waypoint'lere otomatik gidiliyor...")
+
 last_nav_update = 0
 
 try:

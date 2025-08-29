@@ -142,13 +142,25 @@ def main():
         print("⚡ Python dosyası başlatılıyor...")
         
         # Subprocess ile çalıştır (Python 3.6 uyumlu)
+        # GPS modunda otomatik başlatmak için stdin ekle
         process = subprocess.Popen(
             [sys.executable, erkan_file],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,  # stdin ekle
             universal_newlines=True,  # text=True yerine
             bufsize=1
         )
+        
+        # GPS modunu otomatik olarak başlat
+        print("🎯 GPS modu otomatik olarak başlatılıyor...")
+        try:
+            # 'g' tuşunu gönder (GPS modu)
+            process.stdin.write('g\n')
+            process.stdin.flush()
+            print("✅ GPS modu komutu gönderildi")
+        except Exception as e:
+            print(f"⚠️ GPS modu komutu gönderilemedi: {e}")
         
         print("✅ Process başlatıldı (PID: {})".format(process.pid))
         print("📡 Çıktılar dinleniyor...")
