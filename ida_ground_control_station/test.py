@@ -68,11 +68,22 @@ def main():
     # erkan_denendi.py dosyasını ara
     print("🔍 erkan_denendi.py dosyası aranıyor...")
     
-    # Olası konumlar
+    # Debug: Mevcut dizin ve dosyaları göster
+    current_dir = os.getcwd()
+    print(f"📍 Mevcut dizin: {current_dir}")
+    try:
+        files = os.listdir(current_dir)
+        print(f"📁 Dizindeki dosyalar: {', '.join(files[:15])}")
+    except Exception as e:
+        print(f"⚠️ Dizin listesi alınamadı: {e}")
+    
+    # Olası konumlar (Türkçe karakter sorunu için alternatif yollar)
     possible_paths = [
         "erkan_denendi.py",
         "../görev kodları/erkan_denendi.py",
         "görev kodları/erkan_denendi.py",
+        "../gorev_kodlari/erkan_denendi.py",
+        "gorev_kodlari/erkan_denendi.py",
         "/home/honorable/erkan_denendi.py",
         "/home/nvidia/erkan_denendi.py"
     ]
@@ -83,6 +94,8 @@ def main():
             erkan_file = path
             print(f"✅ Dosya bulundu: {path}")
             break
+        else:
+            print(f"❌ Dosya yok: {path}")
     
     if not erkan_file:
         print("❌ erkan_denendi.py dosyası bulunamadı!")

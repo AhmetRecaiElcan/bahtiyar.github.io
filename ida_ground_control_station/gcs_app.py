@@ -3415,8 +3415,33 @@ class GCSApp(QWidget):
             sftp.put(test_file_path, remote_test_path)
             
             # erkan_denendi.py dosyasını da kopyala (eğer varsa)
-            erkan_file_path = os.path.join(os.path.dirname(__file__), 'görev kodları', 'erkan_denendi.py')
-            if os.path.exists(erkan_file_path):
+            # Türkçe karakter sorunu için alternatif yollar dene
+            possible_erkan_paths = [
+                os.path.join(os.path.dirname(__file__), 'görev kodları', 'erkan_denendi.py'),
+                os.path.join(os.path.dirname(__file__), 'gorev_kodlari', 'erkan_denendi.py'),
+                os.path.join(os.path.dirname(__file__), 'gorev_kodlari', 'erkan_denendi.py'),
+                os.path.join(os.path.dirname(__file__), 'erkan_denendi.py')
+            ]
+            
+            # Debug: Mevcut dosyaları listele
+            current_dir = os.path.dirname(__file__)
+            self.log_message_received.emit(f"🔍 Mevcut dizin: {current_dir}")
+            try:
+                files = os.listdir(current_dir)
+                self.log_message_received.emit(f"📁 Dizindeki dosyalar: {', '.join(files[:10])}")
+            except Exception as e:
+                self.log_message_received.emit(f"⚠️ Dizin listesi alınamadı: {e}")
+            
+            erkan_file_path = None
+            for path in possible_erkan_paths:
+                if os.path.exists(path):
+                    erkan_file_path = path
+                    self.log_message_received.emit(f"✅ erkan_denendi.py bulundu: {path}")
+                    break
+                else:
+                    self.log_message_received.emit(f"❌ Dosya yok: {path}")
+            
+            if erkan_file_path and os.path.exists(erkan_file_path):
                 remote_erkan_path = f"/home/{jetson_user}/erkan_denendi.py"
                 sftp.put(erkan_file_path, remote_erkan_path)
                 self.log_message_received.emit("📁 erkan_denendi.py dosyası da kopyalandı")
