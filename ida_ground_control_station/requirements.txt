@@ -27,4 +27,7 @@ numpy>=1.21.0
 # datetime - Python built-in modül
 
 # Threading ve time (Python built-in, ama belirtmek için)
-# threading, time - Python built-in modüller 
+# threading, time - Python built-in modüller
+
+# SSH bağlantısı için (Jetson Nano test fonksiyonu)
+paramiko>=2.8.0 
